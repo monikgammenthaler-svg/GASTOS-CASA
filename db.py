@@ -39,9 +39,27 @@ CATEGORIAS_PENDIENTES = ["Supermercado", "Limpieza", "Farmacia", "Ropa", "Hogar"
 PRIORIDADES = ["Alta", "Normal", "Baja"]
 
 
-def get_conn():
+@st.cache_resource
+def _db():
     url = st.secrets["supabase"]["db_url"]
-    return psycopg2.connect(url)
+    return {"url": url, "conn": psycopg2.connect(url)}
+
+
+def get_conn():
+    db = _db()
+    if db["conn"].closed:
+        db["conn"] = psycopg2.connect(db["url"])
+    try:
+        cur = db["conn"].cursor()
+        cur.execute("SELECT 1")
+        cur.close()
+    except Exception:
+        try:
+            db["conn"].close()
+        except Exception:
+            pass
+        db["conn"] = psycopg2.connect(db["url"])
+    return db["conn"]
 
 
 def init_db():
@@ -98,6 +116,17 @@ def init_db():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS gastos_fijos_excluidos (
+            id SERIAL PRIMARY KEY,
+            mes TEXT NOT NULL,
+            gasto_id INTEGER NOT NULL,
+            UNIQUE(mes, gasto_id)
+        )
+    """)
+
+    c.execute("ALTER TABLE gastos_fijos ADD COLUMN IF NOT EXISTS pagado_por TEXT DEFAULT 'Moni'")
+
     # Gastos fijos por defecto si la tabla está vacía
     c.execute("SELECT COUNT(*) FROM gastos_fijos")
     if c.fetchone()[0] == 0:
@@ -110,8 +139,6 @@ def init_db():
         c.executemany("INSERT INTO gastos_fijos (nombre, valor) VALUES (%s, %s)", fijos_default)
 
     conn.commit()
-    conn.close()
-
 
 # --- Gastos variables ---
 
@@ -122,8 +149,6 @@ def agregar_gasto(fecha, categoria, descripcion, pagado_por, comentarios, tipo, 
         (fecha, categoria, descripcion, pagado_por, comentarios, tipo, monto),
     )
     conn.commit()
-    conn.close()
-
 
 def get_gastos_mes(anio, mes):
     conn = get_conn()
@@ -134,7 +159,6 @@ def get_gastos_mes(anio, mes):
         (f"{prefijo}%",),
     )
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
@@ -159,15 +183,11 @@ def agregar_gasto_en_cuotas(fecha_base, categoria, descripcion, pagado_por, tipo
             (str(fecha_cuota), categoria, desc, pagado_por, comentario, tipo, valor_cuota),
         )
     conn.commit()
-    conn.close()
-
 
 def eliminar_gasto(gasto_id):
     conn = get_conn()
     conn.cursor().execute("DELETE FROM gastos_variables WHERE id = %s", (gasto_id,))
     conn.commit()
-    conn.close()
-
 
 def get_totales_mes(anio, mes):
     conn = get_conn()
@@ -178,7 +198,6 @@ def get_totales_mes(anio, mes):
         (f"{prefijo}%",),
     )
     rows = c.fetchall()
-    conn.close()
     return dict(rows)
 
 
@@ -191,7 +210,6 @@ def get_por_categoria_mes(anio, mes):
         (f"{prefijo}%",),
     )
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
@@ -204,7 +222,6 @@ def get_por_tipo_mes(anio, mes):
         (f"{prefijo}%",),
     )
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
@@ -213,9 +230,8 @@ def get_por_tipo_mes(anio, mes):
 def get_gastos_fijos():
     conn = get_conn()
     c = conn.cursor()
-    c.execute("SELECT id, nombre, valor, activo FROM gastos_fijos WHERE activo=1 ORDER BY id")
+    c.execute("SELECT id, nombre, valor, activo, pagado_por FROM gastos_fijos WHERE activo=1 ORDER BY id")
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
@@ -223,22 +239,38 @@ def actualizar_gasto_fijo(gasto_id, valor):
     conn = get_conn()
     conn.cursor().execute("UPDATE gastos_fijos SET valor=%s WHERE id=%s", (valor, gasto_id))
     conn.commit()
-    conn.close()
 
+def actualizar_pagador_fijo(gasto_id, pagado_por):
+    conn = get_conn()
+    conn.cursor().execute("UPDATE gastos_fijos SET pagado_por=%s WHERE id=%s", (pagado_por, gasto_id))
+    conn.commit()
 
 def agregar_gasto_fijo(nombre, valor):
     conn = get_conn()
     conn.cursor().execute("INSERT INTO gastos_fijos (nombre, valor) VALUES (%s, %s)", (nombre, valor))
     conn.commit()
-    conn.close()
 
+def get_fijos_excluidos_mes(anio, mes):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT gasto_id FROM gastos_fijos_excluidos WHERE mes=%s", (f"{anio}-{mes:02d}",))
+    return {row[0] for row in c.fetchall()}
+
+def toggle_fijo_excluido(anio, mes, gasto_id):
+    mes_str = f"{anio}-{mes:02d}"
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT id FROM gastos_fijos_excluidos WHERE mes=%s AND gasto_id=%s", (mes_str, gasto_id))
+    if c.fetchone():
+        c.execute("DELETE FROM gastos_fijos_excluidos WHERE mes=%s AND gasto_id=%s", (mes_str, gasto_id))
+    else:
+        c.execute("INSERT INTO gastos_fijos_excluidos (mes, gasto_id) VALUES (%s,%s)", (mes_str, gasto_id))
+    conn.commit()
 
 def desactivar_gasto_fijo(gasto_id):
     conn = get_conn()
     conn.cursor().execute("UPDATE gastos_fijos SET activo=0 WHERE id=%s", (gasto_id,))
     conn.commit()
-    conn.close()
-
 
 # --- Compras con tarjeta ---
 
@@ -250,15 +282,12 @@ def agregar_compra_tarjeta(detalle, valor, cuotas, moneda, comentarios, fecha_co
         (detalle, valor, cuotas, valor_cuota, moneda, comentarios, fecha_compra, mes_primera_cuota, tarjeta, pagado_por),
     )
     conn.commit()
-    conn.close()
-
 
 def get_compras_tarjeta():
     conn = get_conn()
     c = conn.cursor()
     c.execute("SELECT id, detalle, valor, cuotas, valor_cuota, moneda, mes_primera_cuota, tarjeta, pagado_por, comentarios, fecha_compra FROM compras_tarjeta ORDER BY id DESC")
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
@@ -266,16 +295,12 @@ def eliminar_compra_tarjeta(compra_id):
     conn = get_conn()
     conn.cursor().execute("DELETE FROM compras_tarjeta WHERE id=%s", (compra_id,))
     conn.commit()
-    conn.close()
-
 
 def get_total_oca_compartida_mes(anio, mes):
     conn = get_conn()
     c = conn.cursor()
     c.execute("SELECT detalle, valor_cuota, cuotas, mes_primera_cuota FROM compras_tarjeta WHERE tarjeta = 'OCA VISA (compartida)'")
     compras = c.fetchall()
-    conn.close()
-
     total = 0.0
     detalle_items = []
     for detalle, valor_cuota, n_cuotas, mes_primera in compras:
@@ -296,6 +321,31 @@ def get_total_oca_compartida_mes(anio, mes):
     return total, detalle_items
 
 
+def get_total_cuotas_activas_mes(anio, mes):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT pagado_por, tarjeta, detalle, valor_cuota, cuotas, mes_primera_cuota FROM compras_tarjeta WHERE tarjeta != 'OCA VISA (compartida)'")
+    compras = c.fetchall()
+    totales = {}
+    detalle_items = []
+    for pagado_por, tarjeta, detalle, valor_cuota, n_cuotas, mes_primera in compras:
+        if not mes_primera:
+            continue
+        partes = mes_primera.strip().split()
+        if len(partes) != 2 or partes[0] not in MESES:
+            continue
+        mes_inicio = MESES.index(partes[0]) + 1
+        anio_inicio = int(partes[1])
+        inicio = anio_inicio * 12 + mes_inicio
+        fin = inicio + n_cuotas - 1
+        actual = anio * 12 + mes
+        if inicio <= actual <= fin:
+            cuota_num = actual - inicio + 1
+            totales[pagado_por] = totales.get(pagado_por, 0) + valor_cuota
+            detalle_items.append((pagado_por, tarjeta, detalle, valor_cuota, cuota_num, n_cuotas))
+    return totales, detalle_items
+
+
 # --- Pendientes ---
 
 def agregar_pendiente(descripcion, categoria, prioridad, asignado_a):
@@ -305,8 +355,6 @@ def agregar_pendiente(descripcion, categoria, prioridad, asignado_a):
         (descripcion, categoria, prioridad, asignado_a, str(date.today())),
     )
     conn.commit()
-    conn.close()
-
 
 def get_pendientes(solo_activos=True):
     conn = get_conn()
@@ -316,7 +364,6 @@ def get_pendientes(solo_activos=True):
         f"SELECT id, descripcion, categoria, prioridad, asignado_a, completado, fecha_creacion FROM pendientes {filtro} ORDER BY CASE prioridad WHEN 'Alta' THEN 1 WHEN 'Normal' THEN 2 ELSE 3 END, id"
     )
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
@@ -324,22 +371,16 @@ def marcar_pendiente(pendiente_id, completado):
     conn = get_conn()
     conn.cursor().execute("UPDATE pendientes SET completado=%s WHERE id=%s", (1 if completado else 0, pendiente_id))
     conn.commit()
-    conn.close()
-
 
 def eliminar_pendiente(pendiente_id):
     conn = get_conn()
     conn.cursor().execute("DELETE FROM pendientes WHERE id=%s", (pendiente_id,))
     conn.commit()
-    conn.close()
-
 
 def actualizar_pendiente(pendiente_id, descripcion):
     conn = get_conn()
     conn.cursor().execute("UPDATE pendientes SET descripcion=%s WHERE id=%s", (descripcion, pendiente_id))
     conn.commit()
-    conn.close()
-
 
 def get_cuotas_del_mes(anio, mes_num):
     nombre_mes = MESES[mes_num - 1]
@@ -350,5 +391,4 @@ def get_cuotas_del_mes(anio, mes_num):
         (f"{nombre_mes} {anio}",),
     )
     rows = c.fetchall()
-    conn.close()
     return rows

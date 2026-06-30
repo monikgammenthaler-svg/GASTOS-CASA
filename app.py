@@ -21,6 +21,9 @@ GOLD_L = "#f5d060"
 GOLD_P = "#fdf6e3"
 WHITE  = "#ffffff"
 GRAY   = "#6b7280"
+SERIF  = "Newsreader, serif"
+
+st.markdown('<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&display=swap" rel="stylesheet">', unsafe_allow_html=True)
 
 st.markdown(f"""
 <style>
@@ -81,13 +84,10 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     st.markdown("---")
-    anio_sel = st.selectbox("Año", list(range(2024, 2028)), index=2)
-    mes_sel = st.selectbox(
-        "Mes",
-        list(range(1, 13)),
-        index=datetime.today().month - 1,
-        format_func=lambda m: db.MESES[m - 1],
-    )
+    anos = list(range(2024, 2029))
+    anio_sel = st.selectbox("Año", anos, index=anos.index(datetime.today().year) if datetime.today().year in anos else 0)
+    mes_nombre = st.selectbox("Mes", db.MESES, index=datetime.today().month - 1)
+    mes_sel = db.MESES.index(mes_nombre) + 1
 
 # ── Helper HTML ───────────────────────────────────────────────────────
 def banner(texto, tipo="info"):
@@ -120,23 +120,31 @@ if pagina == "📊 Resumen del mes":
     )
 
     gastos_fijos      = db.get_gastos_fijos()
-    total_fijos_base  = sum(v for _, _, v, _ in gastos_fijos)   # fijos que paga Moni
+    excluidos_res     = db.get_fijos_excluidos_mes(anio_sel, mes_sel)
+    moni_fijos        = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == "Moni")
+    guille_fijos      = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == "Guille")
+    total_fijos_base  = moni_fijos + guille_fijos
     oca_total, oca_items = db.get_total_oca_compartida_mes(anio_sel, mes_sel)
-    total_fijos       = total_fijos_base + oca_total            # total fijos (para dividir)
+    total_fijos       = total_fijos_base + oca_total
     total_por_persona = db.get_totales_mes(anio_sel, mes_sel)
-    total_variable    = sum(total_por_persona.values())
-    total_general     = total_fijos + total_variable
+    cuotas_persona, cuotas_items = db.get_total_cuotas_activas_mes(anio_sel, mes_sel)
     moni_vars         = total_por_persona.get("Moni", 0)
-    guille_pago       = total_por_persona.get("Guille", 0)
-    moni_pago         = moni_vars + total_fijos_base            # Moni paga variables + todos los fijos
+    moni_cuotas       = cuotas_persona.get("Moni", 0)
+    guille_vars       = total_por_persona.get("Guille", 0)
+    guille_cuotas     = cuotas_persona.get("Guille", 0)
+    guille_pago       = guille_vars + guille_cuotas + guille_fijos
+    total_variable    = sum(total_por_persona.values()) + sum(cuotas_persona.values())
+    total_general     = total_fijos + total_variable
+    moni_pago         = moni_vars + moni_cuotas + moni_fijos
     mitad             = total_general / 2
     balance           = moni_pago - mitad
 
     # Banner "a pagar este mes" (datos del mes anterior)
     tot_ant_persona    = db.get_totales_mes(anio_ant, mes_ant_num)
-    total_variable_ant = sum(tot_ant_persona.values())
+    cuotas_ant, _      = db.get_total_cuotas_activas_mes(anio_ant, mes_ant_num)
+    total_variable_ant = sum(tot_ant_persona.values()) + sum(cuotas_ant.values())
     total_ant          = total_fijos + total_variable_ant
-    moni_ant           = tot_ant_persona.get("Moni", 0) + total_fijos_base
+    moni_ant           = tot_ant_persona.get("Moni", 0) + cuotas_ant.get("Moni", 0) + total_fijos_base
     balance_ant        = moni_ant - total_ant / 2
     if total_ant > 0:
         if abs(balance_ant) < 1:
@@ -251,61 +259,129 @@ if pagina == "📊 Resumen del mes":
     # ── GASTOS FIJOS ─────────────────────────────────────────────────
     st.markdown("---")
 
-    def fila_fijo(nombre, valor):
-        return (
-            f'<div style="display:flex;justify-content:space-between;align-items:center;'
-            f'padding:12px 16px;margin-bottom:6px;background:#f9fafb;border-radius:10px;">'
-            f'<div style="display:flex;align-items:center;gap:10px;">'
-            f'<span style="color:{NAVY};font-size:14px;font-weight:500;">{nombre}</span>'
-            f'<span style="background:#e8f0fe;color:{BLUE};font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">MONI</span>'
+    def tarjeta_compromisos(filas, total_fijos, moni_fijos, guille_fijos):
+        cu_total = total_fijos / 2
+        n_filas = len(filas)
+        th = (
+            f'<div style="display:grid;grid-template-columns:1fr 76px 100px 92px;gap:10px;'
+            f'align-items:center;padding:12px 10px 9px;border-bottom:1px solid rgba(15,27,53,.1);">'
+            f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;">GASTO</span>'
+            f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;">PAGA</span>'
+            f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;text-align:right;">TOTAL</span>'
+            f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;text-align:right;">C/U</span>'
+            f'</div>'
+        )
+        def _fila(nombre, valor, pagado_por, pagado=False):
+            if pagado_por == "Moni":
+                badge = (f'<span style="background:#e8f0fe;color:{BLUE};font-size:9.5px;font-weight:800;'
+                         f'letter-spacing:.5px;padding:3px 9px;border-radius:20px;">MONI</span>')
+            else:
+                badge = (f'<span style="background:rgba(201,168,76,.2);color:#8a6d22;font-size:9.5px;'
+                         f'font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:20px;">GUILLE</span>')
+            if pagado:
+                check = (f'<span style="width:21px;height:21px;border-radius:50%;flex:none;'
+                         f'background:linear-gradient(135deg,{GOLD},{GOLD_L});color:{NAVY};display:flex;'
+                         f'align-items:center;justify-content:center;font-size:12px;font-weight:900;">✓</span>')
+                deco, op = "line-through", ".42"
+            else:
+                check = ('<span style="width:21px;height:21px;border-radius:50%;flex:none;'
+                         'border:2px solid rgba(15,27,53,.16);"></span>')
+                deco, op = "none", "1"
+            return (
+                f'<div style="display:grid;grid-template-columns:1fr 76px 100px 92px;gap:10px;'
+                f'align-items:center;padding:11px 10px;border-radius:10px;opacity:{op};">'
+                f'<div style="display:flex;align-items:center;gap:11px;min-width:0;">{check}'
+                f'<span style="color:{NAVY};font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;'
+                f'text-overflow:ellipsis;text-decoration:{deco};">{nombre}</span></div>'
+                f'<div>{badge}</div>'
+                f'<span style="text-align:right;color:{NAVY};font-family:{SERIF};font-size:18px;font-weight:500;'
+                f'font-variant-numeric:tabular-nums;text-decoration:{deco};">$ {valor:,.0f}</span>'
+                f'<span style="text-align:right;color:#b7973f;font-size:12.5px;font-weight:700;'
+                f'font-variant-numeric:tabular-nums;">$ {valor/2:,.0f}</span>'
+                f'</div>'
+            )
+        filas_html = "".join(
+            _fila(f[0], f[1], f[2], f[3] if len(f) > 3 else False) for f in filas
+        )
+        header = (
+            f'<div style="background:linear-gradient(135deg,{NAVY} 0%,{NAVY2} 58%,{BLUE} 100%);padding:24px 28px 22px;">'
+            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+            f'<div>'
+            f'<div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:3px;">COMPROMISOS DEL MES</div>'
+            f'<div style="color:#fff;font-family:{SERIF};font-size:40px;font-weight:500;margin-top:6px;'
+            f'letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;">$ {total_fijos:,.0f}</div>'
+            f'<div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;letter-spacing:.5px;margin-top:4px;">'
+            f'{n_filas} conceptos · compartido 50 / 50</div>'
             f'</div>'
             f'<div style="text-align:right;">'
-            f'<span style="color:{NAVY};font-size:15px;font-weight:700;">$ {valor:,.0f}</span>'
-            f'<span style="background:{GOLD_P};color:{GOLD};font-size:11px;font-weight:700;'
-            f'padding:2px 8px;border-radius:20px;margin-left:8px;">c/u $ {valor/2:,.0f}</span>'
+            f'<div style="display:inline-block;background:rgba(201,168,76,.22);border:1px solid rgba(245,208,96,.35);'
+            f'border-radius:20px;padding:5px 12px;color:{GOLD_L};font-size:11px;font-weight:700;">corresponde c/u</div>'
+            f'<div style="color:{GOLD_L};font-family:{SERIF};font-size:26px;font-weight:500;margin-top:8px;'
+            f'font-variant-numeric:tabular-nums;">$ {cu_total:,.0f}</div>'
             f'</div></div>'
-        )
-
-    def fila_oca(det, vcuota, cn, total_c):
-        return (
-            f'<div style="display:flex;justify-content:space-between;align-items:center;'
-            f'padding:12px 16px;margin-bottom:6px;background:linear-gradient(90deg,rgba(45,107,196,0.08),rgba(201,168,76,0.06));'
-            f'border-radius:10px;border:1px solid rgba(45,107,196,0.15);">'
-            f'<div style="display:flex;align-items:center;gap:10px;">'
-            f'<span style="font-size:20px;">💳</span>'
-            f'<div><div style="color:{NAVY};font-size:14px;font-weight:700;">OCA VISA compartida</div>'
-            f'<div style="color:{GRAY};font-size:11px;">{det} — cuota {cn} de {total_c}</div></div>'
+            f'<div style="display:flex;gap:9px;margin-top:18px;">'
+            f'<div style="flex:1;background:rgba(45,107,196,.32);border-radius:11px;padding:9px 13px;">'
+            f'<div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:700;letter-spacing:.5px;">PAGA MONI</div>'
+            f'<div style="color:#fff;font-family:{SERIF};font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;">$ {moni_fijos:,.0f}</div>'
             f'</div>'
-            f'<div style="text-align:right;">'
-            f'<span style="color:{BLUE};font-size:15px;font-weight:700;">$ {vcuota:,.0f}</span>'
-            f'<span style="background:#e8f0fe;color:{BLUE};font-size:11px;font-weight:700;'
-            f'padding:2px 8px;border-radius:20px;margin-left:8px;">c/u $ {vcuota/2:,.0f}</span>'
+            f'<div style="flex:1;background:rgba(201,168,76,.28);border-radius:11px;padding:9px 13px;">'
+            f'<div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:700;letter-spacing:.5px;">PAGA GUILLE</div>'
+            f'<div style="color:{GOLD_L};font-family:{SERIF};font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;">$ {guille_fijos:,.0f}</div>'
             f'</div></div>'
+            f'</div>'
+        )
+        return (
+            f'<div style="border-radius:20px;overflow:hidden;box-shadow:0 6px 30px rgba(15,27,53,.13);margin-bottom:8px;">'
+            f'{header}'
+            f'<div style="background:#fff;padding:4px 18px 16px;">{th}{filas_html}</div>'
+            f'</div>'
         )
 
-    html_filas = "".join(fila_fijo(n, v) for _, n, v, _ in gastos_fijos)
-    html_filas += "".join(fila_oca(d, vc, cn, tc) for d, vc, cn, tc in oca_items)
-
-    html_card = (
-        f'<div style="border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(15,27,53,0.13);margin-bottom:8px;">'
-        # Header con gradiente
-        f'<div style="background:linear-gradient(135deg,{NAVY} 0%,{NAVY2} 60%,{BLUE} 100%);padding:22px 28px;">'
-        f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">'
-        f'<div style="color:{GOLD};font-size:10px;font-weight:800;letter-spacing:3px;">COMPROMISOS DEL MES</div>'
-        f'<span style="background:rgba(201,168,76,0.25);color:{GOLD_L};font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">Paga Moni (excepto OCA VISA)</span>'
-        f'</div>'
-        f'<div style="display:flex;justify-content:space-between;align-items:flex-end;">'
-        f'<div style="color:white;font-size:26px;font-weight:900;">$ {total_fijos:,.0f}</div>'
-        f'<div style="text-align:right;">'
-        f'<div style="color:rgba(255,255,255,0.6);font-size:11px;">corresponde a cada uno</div>'
-        f'<div style="color:{GOLD_L};font-size:20px;font-weight:800;">$ {total_fijos/2:,.0f}</div>'
-        f'</div></div></div>'
-        # Body con las filas
-        f'<div style="background:white;padding:16px 20px;">'
-        f'{html_filas}'
-        f'</div></div>'
+    fijos_excluidos = [(nombre_ex,) for gid, nombre_ex, _, _, _ in gastos_fijos if gid in excluidos_res]
+    filas_card = [(nombre_f, v, pg) for gid, nombre_f, v, _, pg in gastos_fijos if gid not in excluidos_res]
+    for d, vc, cn, tc in oca_items:
+        filas_card.append((f"OCA VISA: {d} ({cn}/{tc})", vc, "Guille"))
+    guille_fijos_card = guille_fijos + oca_total
+    st.markdown(
+        tarjeta_compromisos(filas_card, total_fijos, moni_fijos, guille_fijos_card),
+        unsafe_allow_html=True,
     )
-    st.markdown(html_card, unsafe_allow_html=True)
+
+    if fijos_excluidos:
+        excl_html = "".join(
+            f'<div style="display:flex;justify-content:space-between;padding:8px 12px;margin-bottom:3px;'
+            f'background:#f8fafc;border-radius:8px;opacity:0.5;">'
+            f'<span style="color:{GRAY};font-size:12px;text-decoration:line-through;">{nombre_ex}</span>'
+            f'<span style="color:{GRAY};font-size:11px;">no aplica este mes</span></div>'
+            for (nombre_ex,) in fijos_excluidos
+        )
+        st.markdown(
+            f'<div style="background:#f8fafc;border-radius:12px;padding:12px 16px;margin-bottom:8px;">'
+            f'<div style="color:{GRAY};font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">NO APLICA ESTE MES</div>'
+            f'{excl_html}</div>',
+            unsafe_allow_html=True,
+        )
+
+    if cuotas_items:
+        cuotas_html_parts = []
+        for p, t, d, vc, cn, tc in cuotas_items:
+            bg = "#eef3fc" if p == "Moni" else "rgba(201,168,76,.1)"
+            col = BLUE if p == "Moni" else GOLD
+            cuotas_html_parts.append(
+                f'<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;'
+                f'padding:10px 12px;margin-bottom:4px;background:{bg};'
+                f'border-radius:10px;border-left:3px solid {col};">'
+                f'<div><div style="color:{NAVY};font-size:13px;font-weight:600;">{d}</div>'
+                f'<div style="color:{GRAY};font-size:11px;">{t} · cuota {cn}/{tc} · paga {p}</div></div>'
+                f'<span style="color:{NAVY};font-size:15px;font-weight:700;">$ {vc:,.0f}</span>'
+                f'</div>'
+            )
+        st.markdown(
+            f'<div style="background:#f8fafc;border-radius:12px;padding:12px 16px;margin-bottom:8px;">'
+            f'<div style="color:{GRAY};font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">CUOTAS DE TARJETA</div>'
+            f'{"".join(cuotas_html_parts)}</div>',
+            unsafe_allow_html=True,
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -471,19 +547,46 @@ elif pagina == "🔒 Gastos fijos":
     st.caption("Estos valores se dividen entre dos (c/u)")
 
     gastos_fijos = db.get_gastos_fijos()
+    oca_total_f, oca_items_f = db.get_total_oca_compartida_mes(anio_sel, mes_sel)
+    excluidos_f = db.get_fijos_excluidos_mes(anio_sel, mes_sel)
     total = 0
     st.markdown("---")
-    for gasto_id, nombre, valor, _ in gastos_fijos:
-        col_n, col_v, col_c, col_btn = st.columns([3, 2, 2, 1])
-        col_n.write(f"**{nombre}**")
+    for gasto_id, nombre, valor, _, pagador in gastos_fijos:
+        excluido = gasto_id in excluidos_f
+        col_n, col_p, col_v, col_c, col_btn, col_tog = st.columns([3, 2, 2, 2, 1, 1])
+        col_n.write(f"~~{nombre}~~" if excluido else f"**{nombre}**")
+        idx_p = 1 if pagador == "Guille" else 0
+        nuevo_pagador = col_p.selectbox("Quién paga", ["Moni", "Guille"], index=idx_p,
+                                         key=f"pg_{gasto_id}", label_visibility="collapsed",
+                                         disabled=excluido)
+        if nuevo_pagador != pagador:
+            db.actualizar_pagador_fijo(gasto_id, nuevo_pagador)
+            st.rerun()
         nuevo_valor = col_v.number_input("Valor", value=float(valor), step=10.0, format="%.0f",
-                                          key=f"fijo_{gasto_id}", label_visibility="collapsed")
-        col_c.markdown(f"<span style='color:{GOLD};font-weight:600;'>c/u $ {nuevo_valor/2:,.0f}</span>", unsafe_allow_html=True)
-        if col_btn.button("💾", key=f"save_{gasto_id}", help="Guardar"):
+                                          key=f"fijo_{gasto_id}", label_visibility="collapsed",
+                                          disabled=excluido)
+        if excluido:
+            col_c.markdown(f"<span style='color:{GRAY};font-size:11px;'>no aplica</span>", unsafe_allow_html=True)
+        else:
+            col_c.markdown(f"<span style='color:{GOLD};font-weight:600;'>c/u $ {nuevo_valor/2:,.0f}</span>", unsafe_allow_html=True)
+        if col_btn.button("💾", key=f"save_{gasto_id}", help="Guardar", disabled=excluido):
             db.actualizar_gasto_fijo(gasto_id, nuevo_valor)
             st.success(f"✅ {nombre} actualizado")
             st.rerun()
-        total += nuevo_valor
+        if col_tog.button("✅" if not excluido else "⏭️", key=f"tog_{gasto_id}", help="Aplica / No aplica este mes"):
+            db.toggle_fijo_excluido(anio_sel, mes_sel, gasto_id)
+            st.rerun()
+        if not excluido:
+            total += nuevo_valor
+
+    if oca_items_f:
+        st.markdown("**💳 OCA VISA compartida (cuotas activas este mes)**")
+        for det, vcuota, cn, tc in oca_items_f:
+            col_n, col_v, col_c = st.columns([3, 2, 2])
+            col_n.write(f"{det} — cuota {cn}/{tc}")
+            col_v.write(f"$ {vcuota:,.0f}")
+            col_c.markdown(f"<span style='color:{GOLD};font-weight:600;'>c/u $ {vcuota/2:,.0f}</span>", unsafe_allow_html=True)
+        total += oca_total_f
 
     st.markdown("---")
     st.markdown(f"<div class='g-card' style='border-top:3px solid {GOLD};text-align:center;'>"
