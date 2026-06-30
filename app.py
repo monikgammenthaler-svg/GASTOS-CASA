@@ -571,6 +571,16 @@ div[data-testid="column"] button[kind="secondary"] {{
     border-radius: 9px !important;
     font-weight: 700 !important;
 }}
+/* Carta blanca debajo del header */
+div[data-testid="stVerticalBlockBorderWrapper"] {{
+    background: white !important;
+    border: 1px solid rgba(15,27,53,.08) !important;
+    border-top: none !important;
+    border-radius: 0 0 20px 20px !important;
+    box-shadow: 0 6px 24px rgba(15,27,53,.1) !important;
+    margin-top: -4px !important;
+    padding: 0 6px 8px !important;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -607,64 +617,65 @@ div[data-testid="column"] button[kind="secondary"] {{
 </div>
 """, unsafe_allow_html=True)
 
-    hc = st.columns([3, 2, 2, 2.2, 1.6, 1.2])
-    for c, (txt, al, col) in zip(hc, [
-        ("GASTO", "left", "#9aa0ab"), ("PAGA", "left", "#9aa0ab"),
-        ("VALOR $", "right", "#9aa0ab"), ("LE TOCA C/U", "center", "#b7973f"),
-        ("", "left", "#9aa0ab"), ("APLICA", "center", "#9aa0ab")]):
-        c.markdown(f"<div style='font-size:9.5px;font-weight:800;letter-spacing:1.2px;"
-                   f"color:{col};text-align:{al};padding-top:6px;'>{txt}</div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        hc = st.columns([3, 2, 2, 2.2, 1.6, 1.2])
+        for c, (txt, al, col) in zip(hc, [
+            ("GASTO", "left", "#9aa0ab"), ("PAGA", "left", "#9aa0ab"),
+            ("VALOR $", "right", "#9aa0ab"), ("LE TOCA C/U", "center", "#b7973f"),
+            ("", "left", "#9aa0ab"), ("APLICA", "center", "#9aa0ab")]):
+            c.markdown(f"<div style='font-size:9.5px;font-weight:800;letter-spacing:1.2px;"
+                       f"color:{col};text-align:{al};padding-top:6px;'>{txt}</div>", unsafe_allow_html=True)
 
-    for gid, nombre, valor, pagador in activos:
-        excluido = gid in excluidos_f
-        col_n, col_p, col_v, col_c, col_b, col_t = st.columns([3, 2, 2, 2.2, 1.6, 1.2])
+        for gid, nombre, valor, pagador in activos:
+            excluido = gid in excluidos_f
+            col_n, col_p, col_v, col_c, col_b, col_t = st.columns([3, 2, 2, 2.2, 1.6, 1.2])
 
-        nombre_html = f"<s style='color:#9aa0ab;'>{nombre}</s>" if excluido else nombre
-        col_n.markdown(f"<div style='font-size:17px;font-weight:600;color:{NAVY};"
-                       f"padding-top:6px;'>{nombre_html}</div>", unsafe_allow_html=True)
+            nombre_html = f"<s style='color:#9aa0ab;'>{nombre}</s>" if excluido else nombre
+            col_n.markdown(f"<div style='font-size:17px;font-weight:600;color:{NAVY};"
+                           f"padding-top:6px;'>{nombre_html}</div>", unsafe_allow_html=True)
 
-        idx_p = 1 if pagador == "Guille" else 0
-        nuevo_pagador = col_p.selectbox("Paga", ["Moni", "Guille"], index=idx_p,
-                                        key=f"pg_{gid}", label_visibility="collapsed", disabled=excluido)
-        if nuevo_pagador != pagador:
-            db.actualizar_pagador_fijo(gid, nuevo_pagador)
-            st.rerun()
-
-        nuevo_valor = col_v.number_input("Valor", value=float(valor), step=10.0, format="%.0f",
-                                         key=f"fijo_{gid}", label_visibility="collapsed", disabled=excluido)
-
-        if excluido:
-            col_c.markdown("<div style='text-align:center;color:#b3b8c2;font-style:italic;"
-                           "font-size:12px;padding-top:8px;'>no aplica</div>", unsafe_allow_html=True)
-        else:
-            col_c.markdown(f"<div style='text-align:center;font-family:{SERIF};font-size:22px;"
-                           f"font-weight:600;color:{GOLD_T};padding-top:2px;'>$ {nuevo_valor/2:,.0f}</div>",
-                           unsafe_allow_html=True)
-
-        if col_b.button("Guardar", key=f"save_{gid}", disabled=excluido, use_container_width=True):
-            db.actualizar_gasto_fijo(gid, nuevo_valor)
-            st.success(f"✅ {nombre} actualizado")
-            st.rerun()
-
-        aplica = col_t.toggle("", value=not excluido, key=f"tog_{gid}", label_visibility="collapsed")
-        if aplica == excluido:
-            db.toggle_fijo_excluido(anio_sel, mes_sel, gid)
-            st.rerun()
-
-    st.markdown("---")
-    st.markdown(f"<div style='font-size:10px;font-weight:800;letter-spacing:1.5px;"
-                f"color:#9aa0ab;'>AGREGAR GASTO FIJO</div>", unsafe_allow_html=True)
-    with st.form("form_fijo", clear_on_submit=True):
-        c1, c2, c3 = st.columns([3, 2, 1.4])
-        nuevo_nombre = c1.text_input("Nombre", placeholder="ej: Internet, Gym…", label_visibility="collapsed")
-        nuevo_monto  = c2.number_input("Valor", min_value=0.0, step=10.0, format="%.0f", label_visibility="collapsed")
-        if c3.form_submit_button("Agregar", use_container_width=True):
-            if nuevo_nombre and nuevo_monto > 0:
-                db.agregar_gasto_fijo(nuevo_nombre, nuevo_monto)
-                st.success(f"✅ {nuevo_nombre} agregado")
+            idx_p = 1 if pagador == "Guille" else 0
+            nuevo_pagador = col_p.selectbox("Paga", ["Moni", "Guille"], index=idx_p,
+                                            key=f"pg_{gid}", label_visibility="collapsed", disabled=excluido)
+            if nuevo_pagador != pagador:
+                db.actualizar_pagador_fijo(gid, nuevo_pagador)
                 st.rerun()
+
+            nuevo_valor = col_v.number_input("Valor", value=float(valor), step=10.0, format="%.0f",
+                                             key=f"fijo_{gid}", label_visibility="collapsed", disabled=excluido)
+
+            if excluido:
+                col_c.markdown("<div style='text-align:center;color:#b3b8c2;font-style:italic;"
+                               "font-size:12px;padding-top:8px;'>no aplica</div>", unsafe_allow_html=True)
             else:
-                st.error("Completá nombre y valor.")
+                col_c.markdown(f"<div style='text-align:center;font-family:{SERIF};font-size:22px;"
+                               f"font-weight:600;color:{GOLD_T};padding-top:2px;'>$ {nuevo_valor/2:,.0f}</div>",
+                               unsafe_allow_html=True)
+
+            if col_b.button("Guardar", key=f"save_{gid}", disabled=excluido, use_container_width=True):
+                db.actualizar_gasto_fijo(gid, nuevo_valor)
+                st.success(f"✅ {nombre} actualizado")
+                st.rerun()
+
+            aplica = col_t.toggle("", value=not excluido, key=f"tog_{gid}", label_visibility="collapsed")
+            if aplica == excluido:
+                db.toggle_fijo_excluido(anio_sel, mes_sel, gid)
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown(f"<div style='font-size:10px;font-weight:800;letter-spacing:1.5px;"
+                    f"color:#9aa0ab;'>AGREGAR GASTO FIJO</div>", unsafe_allow_html=True)
+        with st.form("form_fijo", clear_on_submit=True):
+            c1, c2, c3 = st.columns([3, 2, 1.4])
+            nuevo_nombre = c1.text_input("Nombre", placeholder="ej: Internet, Gym…", label_visibility="collapsed")
+            nuevo_monto  = c2.number_input("Valor", min_value=0.0, step=10.0, format="%.0f", label_visibility="collapsed")
+            if c3.form_submit_button("Agregar", use_container_width=True):
+                if nuevo_nombre and nuevo_monto > 0:
+                    db.agregar_gasto_fijo(nuevo_nombre, nuevo_monto)
+                    st.success(f"✅ {nuevo_nombre} agregado")
+                    st.rerun()
+                else:
+                    st.error("Completá nombre y valor.")
 
 
 # ══════════════════════════════════════════════════════════════════════
