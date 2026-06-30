@@ -73,6 +73,12 @@ st.markdown(f"""
         margin-bottom: 16px;
     }}
     div[data-testid="stSidebarNav"] {{ display: none; }}
+    /* Toggle dorado cuando está ON */
+    div[data-testid="stToggle"] div[aria-checked="true"],
+    div[data-testid="stToggle"] input:checked ~ div {{
+        background-color: {GOLD} !important;
+        border-color: {GOLD} !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
