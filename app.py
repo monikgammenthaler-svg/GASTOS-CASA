@@ -104,6 +104,15 @@ st.markdown(f"""
         box-shadow:0 6px 24px rgba(15,27,53,.1) !important;
         margin-top:-4px !important; padding:0 6px 8px !important;
     }}
+    /* Sidebar selectbox: fondo oscuro (más específico que la regla global) */
+    section[data-testid="stSidebar"] div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+        background:rgba(255,255,255,.10) !important;
+        border:1px solid rgba(255,255,255,.22) !important;
+    }}
+    section[data-testid="stSidebar"] div[data-testid="stSelectbox"] span,
+    section[data-testid="stSidebar"] div[data-testid="stSelectbox"] svg {{
+        color:{WHITE} !important; fill:{WHITE} !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -542,7 +551,38 @@ elif pagina == "📋 Ver gastos":
 elif pagina == "💳 Cuotas tarjeta":
     compras_all = db.get_compras_tarjeta()
     # (id, detalle, valor, cuotas, valor_cuota, moneda, mes_primera_cuota, tarjeta, pagado_por, comentarios, fecha_compra)
-    total_mes_cuotas = sum(c[4] for c in compras_all)
+
+    def _pagadas(primera, n):
+        """Calcula cuotas pagadas hasta el mes seleccionado, tolerante a formatos libres."""
+        try:
+            partes = (primera or "").strip().split()
+            mes_ini = anio_ini = None
+            if len(partes) == 2 and partes[0] in db.MESES:
+                mes_ini, anio_ini = db.MESES.index(partes[0]) + 1, int(partes[1])
+            else:
+                for p in partes:
+                    if p.capitalize() in db.MESES and mes_ini is None:
+                        mes_ini = db.MESES.index(p.capitalize()) + 1
+                    try:
+                        y = int(p)
+                        if 2020 <= y <= 2035: anio_ini = y
+                    except ValueError:
+                        pass
+            if mes_ini is None:
+                return 0
+            if anio_ini is None:
+                anio_ini = anio_sel  # asumir año del mes seleccionado
+            return max(0, min(anio_sel * 12 + mes_sel - (anio_ini * 12 + mes_ini) + 1, n))
+        except Exception:
+            return 0
+
+    # Calcular pagadas para cada compra y filtrar solo activas este mes
+    compras_con_p = [
+        (cid, det, vt, n, vc, mon, prim, tarj, pers, com, _pagadas(prim, n))
+        for (cid, det, vt, n, vc, mon, prim, tarj, pers, com, _) in compras_all
+    ]
+    activas_mes = [c for c in compras_con_p if 1 <= c[10] <= c[3]]
+    total_mes_cuotas = sum(c[4] for c in activas_mes)
 
     st.markdown(f"""
 <div style="background:linear-gradient(135deg,{NAVY} 0%,{NAVY2} 58%,{BLUE} 100%);
@@ -564,11 +604,11 @@ elif pagina == "💳 Cuotas tarjeta":
     tab_ver, tab_nueva = st.tabs(["Ver cuotas", "Nueva compra"])
 
     with tab_ver:
-        if not compras_all:
-            st.info("No hay compras en cuotas cargadas.")
+        if not activas_mes:
+            st.info("No hay cuotas activas para este mes.")
         else:
             filtro_tarj = st.selectbox("Filtrar por tarjeta", ["Todas"] + db.TARJETAS, label_visibility="collapsed")
-            vis = compras_all if filtro_tarj == "Todas" else [c for c in compras_all if c[7] == filtro_tarj]
+            vis = activas_mes if filtro_tarj == "Todas" else [c for c in activas_mes if c[7] == filtro_tarj]
             tot_vis = sum(c[4] for c in vis)
 
             st.markdown(f"""
@@ -579,28 +619,14 @@ elif pagina == "💳 Cuotas tarjeta":
   <span style="font-family:{SERIF};font-size:30px;font-weight:600;color:{NAVY};">$ {tot_vis:,.0f}</span>
 </div>""", unsafe_allow_html=True)
 
-            for (cid, detalle_c, v_total, n, v_cuota, mon, primera, tarjeta_c, persona, coment, _) in vis:
-                partes = primera.strip().split()
-                try:
-                    mes_ini  = db.MESES.index(partes[0]) + 1
-                    anio_ini = int(partes[1])
-                    pagadas  = max(0, min(anio_sel * 12 + mes_sel - (anio_ini * 12 + mes_ini) + 1, n))
-                except Exception:
-                    pagadas = 1
+            for (cid, detalle_c, v_total, n, v_cuota, mon, primera, tarjeta_c, persona, coment, pagadas) in vis:
                 pct = round(pagadas / n * 100) if n else 0
                 chip_bg = "#e8f0fe" if persona == "Moni" else "rgba(201,168,76,.2)"
                 chip_c  = BLUE     if persona == "Moni" else "#8a6d22"
-                with st.expander("", expanded=False):
+                lbl = f"💳 {tarjeta_c}  ·  {detalle_c}  —  {mon} {v_cuota:,.0f}/mes  (cuota {pagadas}/{n})"
+                with st.expander(lbl, expanded=False):
                     st.markdown(f"""
-<div style="display:flex;justify-content:space-between;align-items:center;">
-  <div style="display:flex;align-items:center;gap:11px;">
-    <span style="background:{chip_bg};color:{chip_c};font-size:10px;font-weight:800;
-          padding:4px 10px;border-radius:7px;">{tarjeta_c}</span>
-    <span style="font-size:15px;font-weight:600;color:{NAVY};">{detalle_c}</span>
-  </div>
-  <span style="font-family:{SERIF};font-size:18px;font-weight:600;color:{NAVY};">{mon} {v_cuota:,.0f}/mes</span>
-</div>
-<div style="display:flex;justify-content:space-between;margin:10px 0 5px;">
+<div style="display:flex;justify-content:space-between;margin:6px 0 5px;">
   <span style="font-size:11px;font-weight:700;color:#6b7280;">cuota {pagadas} de {n}</span>
   <span style="font-size:11px;font-weight:700;color:#b7973f;">{pct}%</span>
 </div>
@@ -615,7 +641,7 @@ elif pagina == "💳 Cuotas tarjeta":
   <div><div style="font-size:9.5px;font-weight:800;color:#9aa0ab;">1RA CUOTA</div>
        <div style="font-size:13.5px;font-weight:600;">{primera}</div></div>
   <div><div style="font-size:9.5px;font-weight:800;color:#9aa0ab;">PAGA</div>
-       <div style="font-size:13.5px;font-weight:600;">{persona}</div></div>
+       <div style="font-size:13.5px;font-weight:600;"><span style="background:{chip_bg};color:{chip_c};padding:3px 9px;border-radius:7px;">{persona}</span></div></div>
 </div>""", unsafe_allow_html=True)
                     if coment:
                         st.caption(coment)

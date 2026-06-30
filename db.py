@@ -296,6 +296,35 @@ def eliminar_compra_tarjeta(compra_id):
     conn.cursor().execute("DELETE FROM compras_tarjeta WHERE id=%s", (compra_id,))
     conn.commit()
 
+def _parse_mes_cuota(mes_primera, anio_fallback=None):
+    """Parsea mes_primera_cuota en formato 'Julio 2026' o texto libre como
+    'Primer cuota se paga en julio'. Si no encuentra año, usa anio_fallback."""
+    if not mes_primera:
+        return None, None
+    partes = mes_primera.strip().split()
+    # Formato estándar: "Julio 2026"
+    if len(partes) == 2 and partes[0] in MESES:
+        try:
+            return MESES.index(partes[0]) + 1, int(partes[1])
+        except ValueError:
+            pass
+    # Fallback: buscar nombre de mes y año de 4 dígitos en cualquier posición
+    mes_num = None
+    anio = None
+    for p in partes:
+        if p.capitalize() in MESES and mes_num is None:
+            mes_num = MESES.index(p.capitalize()) + 1
+        try:
+            y = int(p)
+            if 2020 <= y <= 2035:
+                anio = y
+        except ValueError:
+            pass
+    if mes_num is not None:
+        return mes_num, anio if anio is not None else anio_fallback
+    return None, None
+
+
 def get_total_oca_compartida_mes(anio, mes):
     conn = get_conn()
     c = conn.cursor()
@@ -304,13 +333,9 @@ def get_total_oca_compartida_mes(anio, mes):
     total = 0.0
     detalle_items = []
     for detalle, valor_cuota, n_cuotas, mes_primera in compras:
-        if not mes_primera:
+        mes_inicio, anio_inicio = _parse_mes_cuota(mes_primera, anio_fallback=anio)
+        if mes_inicio is None or anio_inicio is None:
             continue
-        partes = mes_primera.strip().split()
-        if len(partes) != 2 or partes[0] not in MESES:
-            continue
-        mes_inicio = MESES.index(partes[0]) + 1
-        anio_inicio = int(partes[1])
         inicio = anio_inicio * 12 + mes_inicio
         fin = inicio + n_cuotas - 1
         actual = anio * 12 + mes
@@ -329,13 +354,9 @@ def get_total_cuotas_activas_mes(anio, mes):
     totales = {}
     detalle_items = []
     for pagado_por, tarjeta, detalle, valor_cuota, n_cuotas, mes_primera in compras:
-        if not mes_primera:
+        mes_inicio, anio_inicio = _parse_mes_cuota(mes_primera, anio_fallback=anio)
+        if mes_inicio is None or anio_inicio is None:
             continue
-        partes = mes_primera.strip().split()
-        if len(partes) != 2 or partes[0] not in MESES:
-            continue
-        mes_inicio = MESES.index(partes[0]) + 1
-        anio_inicio = int(partes[1])
         inicio = anio_inicio * 12 + mes_inicio
         fin = inicio + n_cuotas - 1
         actual = anio * 12 + mes
