@@ -30,7 +30,7 @@ st.markdown('<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght
 st.markdown(f"""
 <style>
     /* Fondo general */
-    .stApp {{ background-color: #fde8f0; }}
+    .stApp {{ background-color: #f5f0e8; }}
 
     /* Sidebar */
     [data-testid="stSidebar"] {{
