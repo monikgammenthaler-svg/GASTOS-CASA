@@ -29,72 +29,104 @@ st.markdown('<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght
 
 st.markdown(f"""
 <style>
-    /* Fondo general */
-    .stApp {{ background-color: #f5f0e8; }}
-
+    .stApp {{ background-color: #efeae6; }}
     /* Sidebar */
-    [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, {NAVY} 0%, {NAVY2} 100%);
+    section[data-testid="stSidebar"] > div {{
+        background: linear-gradient(180deg,{NAVY},#13213f) !important;
     }}
-    [data-testid="stSidebar"] * {{ color: {WHITE} !important; }}
-    [data-testid="stSidebar"] .stRadio label {{ color: {WHITE} !important; }}
-    [data-testid="stSidebar"] hr {{ border-color: rgba(255,255,255,0.15) !important; }}
-    [data-testid="stSidebar"] select {{
-        background: rgba(255,255,255,0.1) !important;
-        color: {WHITE} !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
+    section[data-testid="stSidebar"] * {{ color:{WHITE} !important; }}
+    section[data-testid="stSidebar"] div[role="radiogroup"] label {{
+        display:flex; align-items:center; gap:12px;
+        padding:10px 12px; border-radius:11px; margin:2px 0;
+        cursor:pointer; transition:background .15s;
     }}
-    /* Botón primario */
-    .stButton > button[kind="primary"], div[data-testid="stFormSubmitButton"] > button {{
-        background: linear-gradient(135deg, {GOLD}, {GOLD_L}) !important;
-        color: {NAVY} !important;
-        font-weight: 700 !important;
-        border: none !important;
-        border-radius: 10px !important;
+    section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {{ background:rgba(255,255,255,.07); }}
+    section[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child {{ display:none; }}
+    section[data-testid="stSidebar"] div[role="radiogroup"] label[data-checked="true"] {{
+        background:rgba(45,107,196,.26);
+        box-shadow:inset 3px 0 0 {GOLD_L};
     }}
-    .stButton > button[kind="primary"]:hover {{
-        background: linear-gradient(135deg, {GOLD_L}, {GOLD}) !important;
-        transform: translateY(-1px);
+    section[data-testid="stSidebar"] div[role="radiogroup"] p {{ font-size:14px; font-weight:600; }}
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {{
+        background:rgba(255,255,255,.06) !important;
+        border:1px solid rgba(255,255,255,.14) !important; border-radius:10px !important;
     }}
+    /* Inputs globales */
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stDateInput"] input {{
+        border-radius:10px !important; border:1px solid rgba(15,27,53,.14) !important;
+    }}
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+        border-radius:10px !important; background:#f4f6fb !important;
+        border:1px solid rgba(15,27,53,.1) !important;
+    }}
+    div[data-testid="stNumberInput"] input {{
+        border-radius:9px !important; border:1px solid rgba(15,27,53,.14) !important;
+        font-family:{SERIF} !important; font-size:16px !important;
+        text-align:right !important; color:{NAVY} !important; background:#fff !important;
+    }}
+    /* Botones */
+    .stButton > button[kind="primary"] {{
+        background:linear-gradient(135deg,{NAVY},{BLUE}) !important;
+        color:#fff !important; font-weight:700 !important;
+        border:none !important; border-radius:12px !important;
+    }}
+    div[data-testid="stForm"] button[kind="primaryFormSubmit"],
+    div[data-testid="stForm"] button[kind="secondaryFormSubmit"] {{
+        background:linear-gradient(135deg,{NAVY},{BLUE}) !important;
+        color:#fff !important; border:none !important; border-radius:12px !important;
+        font-weight:700 !important;
+    }}
+    div[data-testid="column"] button[kind="secondary"] {{
+        border:1.5px solid rgba(45,107,196,.4) !important;
+        color:{BLUE} !important; border-radius:9px !important; font-weight:700 !important;
+    }}
+    /* Tabs con acento dorado */
+    button[data-baseweb="tab"][aria-selected="true"] {{ color:{NAVY} !important; }}
+    div[data-baseweb="tab-highlight"] {{ background:{GOLD} !important; }}
     /* Títulos */
-    h1 {{ color: {NAVY} !important; }}
-    h2, h3 {{ color: {NAVY2} !important; }}
-    /* Separador */
-    hr {{ border-color: #e2e8f0 !important; }}
-    /* Tags */
-    .tag-moni  {{ background:{BLUE};  color:{WHITE}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
-    .tag-guille {{ background:{GOLD}; color:{NAVY};  border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
-    /* Card genérica */
-    .g-card {{
-        background: {WHITE};
-        border-radius: 14px;
-        padding: 20px 24px;
-        box-shadow: 0 2px 12px rgba(15,27,53,0.08);
-        margin-bottom: 16px;
-    }}
-    div[data-testid="stSidebarNav"] {{ display: none; }}
-    /* Toggle dorado cuando está ON */
+    h1 {{ color:{NAVY} !important; }}
+    h2, h3 {{ color:{NAVY2} !important; }}
+    hr {{ border-color:#e2e8f0 !important; }}
+    .tag-moni  {{ background:{BLUE}; color:{WHITE}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
+    .tag-guille {{ background:{GOLD}; color:{NAVY}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
+    .g-card {{ background:{WHITE}; border-radius:14px; padding:20px 24px; box-shadow:0 2px 12px rgba(15,27,53,0.08); margin-bottom:16px; }}
+    div[data-testid="stSidebarNav"] {{ display:none; }}
+    /* Toggle dorado */
     div[data-testid="stToggle"] div[aria-checked="true"],
     div[data-testid="stToggle"] input:checked ~ div {{
-        background-color: {GOLD} !important;
-        border-color: {GOLD} !important;
+        background-color:{GOLD} !important; border-color:{GOLD} !important;
+    }}
+    /* Carta blanca para st.container(border=True) */
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
+        background:white !important; border:1px solid rgba(15,27,53,.08) !important;
+        border-top:none !important; border-radius:0 0 20px 20px !important;
+        box-shadow:0 6px 24px rgba(15,27,53,.1) !important;
+        margin-top:-4px !important; padding:0 6px 8px !important;
     }}
 </style>
 """, unsafe_allow_html=True)
 
 # ── Sidebar ──────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown(f"<div style='font-size:28px;font-weight:800;letter-spacing:1px;padding:8px 0 4px;color:{GOLD}'>🏠 Gastos Casa</div>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown(f"""
+<div style="display:flex;align-items:center;gap:11px;padding:8px 6px 0;">
+  <span style="font-size:26px;">🏠</span>
+  <span style="font-family:{DISPLAY};font-size:27px;font-weight:600;letter-spacing:.3px;">Gastos Casa</span>
+</div>
+<div style="height:1px;background:rgba(255,255,255,.1);margin:18px 6px;"></div>
+""", unsafe_allow_html=True)
     pagina = st.radio(
         "Menú",
         ["📊 Resumen del mes", "➕ Cargar gasto", "📋 Ver gastos", "💳 Cuotas tarjeta", "🔒 Gastos fijos", "📝 Pendientes"],
         label_visibility="collapsed",
     )
-    st.markdown("---")
+    st.markdown('<div style="height:1px;background:rgba(255,255,255,.1);margin:18px 6px;"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:1.5px;">AÑO</div>', unsafe_allow_html=True)
     anos = list(range(2024, 2029))
-    anio_sel = st.selectbox("Año", anos, index=anos.index(datetime.today().year) if datetime.today().year in anos else 0)
-    mes_nombre = st.selectbox("Mes", db.MESES, index=datetime.today().month - 1)
+    anio_sel = st.selectbox("Año", anos, index=anos.index(datetime.today().year) if datetime.today().year in anos else 0, label_visibility="collapsed")
+    st.markdown(f'<div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:1.5px;margin-top:8px;">MES</div>', unsafe_allow_html=True)
+    mes_nombre = st.selectbox("Mes", db.MESES, index=datetime.today().month - 1, label_visibility="collapsed")
     mes_sel = db.MESES.index(mes_nombre) + 1
 
 # ── Helper HTML ───────────────────────────────────────────────────────
@@ -108,6 +140,83 @@ def banner(texto, tipo="info"):
     border, bg = colores.get(tipo, (BLUE, "#e8f0fe"))
     return f"<div style='background:{bg};border-left:4px solid {border};padding:11px 16px;border-radius:8px;margin-bottom:14px;font-size:14px;color:{NAVY};'>{texto}</div>"
 
+def render_resumen(st, mes_nombre, anio_sel,
+                   total_mes, variables, fijos,
+                   moni_pago, guille_pago, corresponde_cu,
+                   deudor, acreedor, balance,
+                   total_ant=None, balance_ant=None, deudor_ant=None, acreedor_ant=None):
+    moni_pct = round(moni_pago / (moni_pago + guille_pago) * 100) if (moni_pago + guille_pago) else 50
+    st.markdown(f"""
+<div style="padding:34px 30px 8px;">
+  <div style="color:#b7973f;font-family:{DISPLAY};font-size:19px;font-weight:600;
+       font-style:italic;letter-spacing:3px;text-transform:uppercase;">Resumen del mes</div>
+  <div style="color:{NAVY};font-family:{DISPLAY};font-size:72px;font-weight:600;
+       line-height:.98;margin-top:4px;letter-spacing:-.5px;">{mes_nombre} {anio_sel}</div>
+</div>""", unsafe_allow_html=True)
+    st.markdown(f"""
+<div style="padding:0 30px;display:flex;flex-direction:column;gap:8px;">
+  <div style="display:flex;align-items:center;gap:10px;background:#faf8f4;border-left:3px solid {GOLD};
+       border-radius:8px;padding:9px 13px;">
+    <span style="width:6px;height:6px;border-radius:50%;background:{GOLD};flex:none;"></span>
+    <span style="font-size:12.5px;color:#6b5d38;">Los gastos de <b style="color:{NAVY};">{mes_nombre}</b>
+    se pagan con el sueldo de <b style="color:{NAVY};">principios del mes siguiente</b>.</span>
+  </div>
+</div>""", unsafe_allow_html=True)
+    if balance_ant is not None and total_ant:
+        st.markdown(f"""
+<div style="padding:8px 30px 0;">
+  <div style="display:flex;align-items:center;gap:10px;background:#eef7f1;border-left:3px solid #1f9d57;
+       border-radius:8px;padding:9px 13px;">
+    <span style="width:6px;height:6px;border-radius:50%;background:#1f9d57;flex:none;"></span>
+    <span style="font-size:12.5px;color:#2f6b48;">A pagar <b>este mes</b>: Total
+    <b>$ {total_ant:,.0f}</b> · {deudor_ant} le paga a {acreedor_ant} <b>$ {balance_ant:,.0f}</b></span>
+  </div>
+</div>""", unsafe_allow_html=True)
+    if balance < 1:
+        hero_inner = f"""
+      <div style="color:#86efac;font-size:11px;font-weight:800;letter-spacing:2px;">ESTÁN AL DÍA</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:54px;font-weight:600;line-height:1.02;margin-top:6px;">$ 0</div>
+      <div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:2px;">Los dos gastaron lo mismo</div>"""
+    else:
+        hero_inner = f"""
+      <div style="color:{GOLD_L};font-size:11px;font-weight:800;letter-spacing:2px;">{deudor} LE DEBE A {acreedor}</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:54px;font-weight:600;line-height:1.02;margin-top:6px;">$ {balance:,.0f}</div>
+      <div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:2px;">para quedar iguales</div>"""
+    st.markdown(f"""
+<div style="margin:18px 24px 8px;background:linear-gradient(140deg,{NAVY},{NAVY2} 70%,{BLUE});
+     border-radius:18px;padding:26px 28px;box-shadow:0 6px 24px rgba(15,27,53,.22);">
+  <div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:3px;">LIQUIDACIÓN DEL MES</div>
+  <div style="text-align:center;padding:14px 0 18px;">{hero_inner}</div>
+  <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);">
+    <div style="background:linear-gradient(90deg,{BLUE},#3f86e0);width:{moni_pct}%;"></div>
+    <div style="background:linear-gradient(90deg,{GOLD},{GOLD_L});flex:1;"></div>
+  </div>
+  <div style="display:flex;align-items:stretch;gap:14px;margin-top:16px;">
+    <div style="flex:1;background:rgba(45,107,196,.28);border-radius:13px;padding:14px 16px;text-align:center;">
+      <div style="color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:1px;">MONI PAGÓ</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {moni_pago:,.0f}</div>
+      <div style="color:rgba(255,255,255,.5);font-size:10.5px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
+    </div>
+    <div style="display:flex;align-items:center;color:{GOLD_L};font-size:20px;opacity:.7;">⇄</div>
+    <div style="flex:1;background:rgba(201,168,76,.22);border-radius:13px;padding:14px 16px;text-align:center;">
+      <div style="color:{GOLD_L};font-size:11px;font-weight:700;letter-spacing:1px;">GUILLE PAGÓ</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {guille_pago:,.0f}</div>
+      <div style="color:rgba(255,255,255,.5);font-size:10.5px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+    def _stat(label, valor, acento):
+        return (f'<div style="background:#faf8f4;border:1px solid rgba(15,27,53,.07);'
+                f'border-top:3px solid {acento};border-radius:13px;padding:16px 12px;text-align:center;">'
+                f'<div style="color:#9aa0ab;font-size:10px;font-weight:800;letter-spacing:1.2px;">{label}</div>'
+                f'<div style="color:{NAVY};font-family:{SERIF};font-size:28px;font-weight:600;margin-top:4px;">$ {valor:,.0f}</div></div>')
+    st.markdown(f"""
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:16px 24px 28px;">
+  {_stat("TOTAL DEL MES", total_mes, GOLD)}
+  {_stat("VARIABLES", variables, BLUE)}
+  {_stat("FIJOS", fijos, NAVY2)}
+</div>""", unsafe_allow_html=True)
+
 # ══════════════════════════════════════════════════════════════════════
 # 1. RESUMEN DEL MES
 # ══════════════════════════════════════════════════════════════════════
@@ -120,12 +229,6 @@ if pagina == "📊 Resumen del mes":
 
     mes_sig_num   = mes_sel + 1 if mes_sel < 12 else 1
     nombre_mes_sig = db.MESES[mes_sig_num - 1]
-
-    st.markdown(f"<h1 style='margin-bottom:4px;'>{nombre_mes} {anio_sel}</h1>", unsafe_allow_html=True)
-    st.markdown(
-        banner(f"Los gastos de <b>{nombre_mes}</b> se pagan con el sueldo de <b>principios de {nombre_mes_sig}</b>.", "gold"),
-        unsafe_allow_html=True,
-    )
 
     gastos_fijos      = db.get_gastos_fijos()
     excluidos_res     = db.get_fijos_excluidos_mes(anio_sel, mes_sel)
@@ -147,84 +250,33 @@ if pagina == "📊 Resumen del mes":
     mitad             = total_general / 2
     balance           = moni_pago - mitad
 
-    # Banner "a pagar este mes" (datos del mes anterior)
     tot_ant_persona    = db.get_totales_mes(anio_ant, mes_ant_num)
     cuotas_ant, _      = db.get_total_cuotas_activas_mes(anio_ant, mes_ant_num)
     total_variable_ant = sum(tot_ant_persona.values()) + sum(cuotas_ant.values())
     total_ant          = total_fijos + total_variable_ant
     moni_ant           = tot_ant_persona.get("Moni", 0) + cuotas_ant.get("Moni", 0) + total_fijos_base
     balance_ant        = moni_ant - total_ant / 2
+
+    if abs(balance) < 1:
+        deudor, acreedor, balance_show = "—", "—", 0
+    elif balance > 0:
+        deudor, acreedor, balance_show = "GUILLE", "MONI", balance
+    else:
+        deudor, acreedor, balance_show = "MONI", "GUILLE", abs(balance)
+
+    kw_ant = {}
     if total_ant > 0:
         if abs(balance_ant) < 1:
-            deuda_txt = "Estaban al dia"
-            tip = "success"
+            kw_ant = dict(total_ant=total_ant, balance_ant=0, deudor_ant="—", acreedor_ant="—")
         elif balance_ant > 0:
-            deuda_txt = f"<b>Guille le paga a Moni $ {balance_ant:,.0f}</b>"
-            tip = "success"
+            kw_ant = dict(total_ant=total_ant, balance_ant=balance_ant, deudor_ant="Guille", acreedor_ant="Moni")
         else:
-            deuda_txt = f"<b>Moni le paga a Guille $ {abs(balance_ant):,.0f}</b>"
-            tip = "info"
-        st.markdown(
-            banner(f"A pagar ESTE mes (gastos de {nombre_mes_ant}): Total $ {total_ant:,.0f}  &nbsp;·&nbsp;  {deuda_txt}", tip),
-            unsafe_allow_html=True,
-        )
+            kw_ant = dict(total_ant=total_ant, balance_ant=abs(balance_ant), deudor_ant="Moni", acreedor_ant="Guille")
 
-    # ── TARJETA LIQUIDACIÓN ──────────────────────────────────────────
-    st.markdown(f"""
-    <div style="background:linear-gradient(135deg,{NAVY},{NAVY2});border-radius:18px;padding:28px 32px 20px;margin:8px 0 16px;box-shadow:0 4px 20px rgba(15,27,53,0.25);">
-        <div style="color:{GOLD};font-size:11px;font-weight:700;letter-spacing:2px;margin-bottom:20px;">LIQUIDACIÓN DEL MES</div>
-        <div style="display:flex;justify-content:space-around;align-items:center;gap:12px;">
-            <div style="text-align:center;flex:1;">
-                <div style="background:rgba(45,107,196,0.3);border-radius:12px;padding:16px 12px;">
-                    <div style="color:#93c5fd;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">MONI pagó</div>
-                    <div style="color:{WHITE};font-size:30px;font-weight:900;line-height:1;">$ {moni_pago:,.0f}</div>
-                    <div style="color:#94a3b8;font-size:11px;margin-top:6px;">le corresponde $ {mitad:,.0f}</div>
-                </div>
-            </div>
-            <div style="color:{GOLD};font-size:22px;opacity:0.6;">⇄</div>
-            <div style="text-align:center;flex:1;">
-                <div style="background:rgba(201,168,76,0.2);border-radius:12px;padding:16px 12px;">
-                    <div style="color:{GOLD_L};font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">GUILLE pagó</div>
-                    <div style="color:{WHITE};font-size:30px;font-weight:900;line-height:1;">$ {guille_pago:,.0f}</div>
-                    <div style="color:#94a3b8;font-size:11px;margin-top:6px;">le corresponde $ {mitad:,.0f}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── RESULTADO ────────────────────────────────────────────────────
-    if abs(balance) < 1:
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,#14532d,#166534);border-radius:14px;padding:20px;text-align:center;margin-bottom:20px;">
-            <div style="color:#86efac;font-size:13px;font-weight:700;letter-spacing:1px;">ESTAN AL DIA</div>
-            <div style="color:{WHITE};font-size:18px;margin-top:4px;">Los dos gastaron lo mismo este mes</div>
-        </div>""", unsafe_allow_html=True)
-    elif balance > 0:
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,{NAVY2},{BLUE});border-radius:14px;padding:22px;text-align:center;margin-bottom:20px;box-shadow:0 4px 16px rgba(45,107,196,0.3);">
-            <div style="color:{GOLD_L};font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:6px;">GUILLE LE DEBE A MONI</div>
-            <div style="color:{WHITE};font-size:42px;font-weight:900;line-height:1.1;">$ {balance:,.0f}</div>
-            <div style="color:#94a3b8;font-size:12px;margin-top:6px;">para quedar iguales</div>
-        </div>""", unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,#78350f,#92400e);border-radius:14px;padding:22px;text-align:center;margin-bottom:20px;box-shadow:0 4px 16px rgba(201,168,76,0.3);">
-            <div style="color:{GOLD_L};font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:6px;">MONI LE DEBE A GUILLE</div>
-            <div style="color:{WHITE};font-size:42px;font-weight:900;line-height:1.1;">$ {abs(balance):,.0f}</div>
-            <div style="color:#fde68a;font-size:12px;margin-top:6px;">para quedar iguales</div>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # ── TOTALES ──────────────────────────────────────────────────────
-    col1, col2, col3 = st.columns(3)
-    for col, label, valor in [(col1,"Total del mes",total_general),(col2,"Variables",total_variable),(col3,"Fijos",total_fijos)]:
-        col.markdown(f"""
-        <div class="g-card" style="text-align:center;border-top:3px solid {GOLD};">
-            <div style="color:{GRAY};font-size:12px;font-weight:600;letter-spacing:1px;">{label.upper()}</div>
-            <div style="color:{NAVY};font-size:24px;font-weight:800;margin-top:4px;">$ {valor:,.0f}</div>
-        </div>""", unsafe_allow_html=True)
+    render_resumen(st, nombre_mes, anio_sel,
+                   total_general, total_variable, total_fijos,
+                   moni_pago, guille_pago, mitad,
+                   deudor, acreedor, balance_show, **kw_ant)
 
     st.markdown("---")
 
@@ -396,7 +448,8 @@ if pagina == "📊 Resumen del mes":
 # 2. CARGAR GASTO
 # ══════════════════════════════════════════════════════════════════════
 elif pagina == "➕ Cargar gasto":
-    st.markdown(f"<h1>Cargar gasto</h1>", unsafe_allow_html=True)
+    st.markdown(f'<div style="color:{NAVY};font-family:{DISPLAY};font-size:46px;font-weight:600;'
+                f'line-height:1;margin-bottom:10px;">Cargar gasto</div>', unsafe_allow_html=True)
 
     tiene_cuotas = st.checkbox("¿Pago en cuotas?")
 
@@ -423,7 +476,7 @@ elif pagina == "➕ Cargar gasto":
                 st.info(f"Valor por cuota: $ {monto / num_cuotas:,.0f}  ·  {int(num_cuotas)} meses desde {db.MESES[fecha.month - 1]} {fecha.year}")
 
         comentarios = st.text_input("Comentarios (opcional)", placeholder="ej: con 20% descuento")
-        enviado = st.form_submit_button("Guardar gasto", use_container_width=True, type="primary")
+        enviado = st.form_submit_button("Guardar gasto", use_container_width=True)
 
     if enviado:
         if monto <= 0:
@@ -487,50 +540,98 @@ elif pagina == "📋 Ver gastos":
 # 4. CUOTAS TARJETA
 # ══════════════════════════════════════════════════════════════════════
 elif pagina == "💳 Cuotas tarjeta":
-    st.markdown(f"<h1>Cuotas con tarjeta</h1>", unsafe_allow_html=True)
+    compras_all = db.get_compras_tarjeta()
+    # (id, detalle, valor, cuotas, valor_cuota, moneda, mes_primera_cuota, tarjeta, pagado_por, comentarios, fecha_compra)
+    total_mes_cuotas = sum(c[4] for c in compras_all)
+
+    st.markdown(f"""
+<div style="background:linear-gradient(135deg,{NAVY} 0%,{NAVY2} 58%,{BLUE} 100%);
+            border-radius:20px 20px 0 0;padding:24px 30px 6px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="color:{GOLD_L};font-family:{DISPLAY};font-size:16px;font-weight:600;
+           font-style:italic;letter-spacing:2px;text-transform:uppercase;">Cuotas · Tarjeta</div>
+      <div style="color:#fff;font-family:{DISPLAY};font-size:40px;font-weight:600;line-height:1.05;">Cuotas con tarjeta</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="color:rgba(255,255,255,.55);font-size:10px;font-weight:700;letter-spacing:2px;">TOTAL / MES</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:32px;font-weight:500;">$ {total_mes_cuotas:,.0f}</div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
     tab_ver, tab_nueva = st.tabs(["Ver cuotas", "Nueva compra"])
 
     with tab_ver:
-        compras = db.get_compras_tarjeta()
-        if not compras:
+        if not compras_all:
             st.info("No hay compras en cuotas cargadas.")
         else:
-            filtro_tarj = st.selectbox("Filtrar por tarjeta", ["Todas"] + db.TARJETAS)
-            df = pd.DataFrame(compras, columns=["id","Detalle","Valor total","Cuotas","Valor cuota","Moneda","1ra cuota en","Tarjeta","Pagado por","Comentarios","Fecha compra"])
-            if filtro_tarj != "Todas":
-                df = df[df["Tarjeta"] == filtro_tarj]
+            filtro_tarj = st.selectbox("Filtrar por tarjeta", ["Todas"] + db.TARJETAS, label_visibility="collapsed")
+            vis = compras_all if filtro_tarj == "Todas" else [c for c in compras_all if c[7] == filtro_tarj]
+            tot_vis = sum(c[4] for c in vis)
 
-            total_cuotas = df["Valor cuota"].sum()
             st.markdown(f"""
-            <div class="g-card" style="border-left:4px solid {GOLD};margin-bottom:16px;">
-                <span style="color:{GRAY};font-size:12px;">TOTAL CUOTAS / MES</span><br>
-                <span style="color:{NAVY};font-size:26px;font-weight:800;">$ {total_cuotas:,.0f}</span>
-            </div>""", unsafe_allow_html=True)
+<div style="display:flex;justify-content:space-between;align-items:center;
+     background:{GOLD_P};border:1px solid rgba(201,168,76,.3);border-left:4px solid {GOLD};
+     border-radius:13px;padding:14px 20px;margin:6px 0 14px;">
+  <span style="font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:#9a8c5e;">TOTAL CUOTAS / MES</span>
+  <span style="font-family:{SERIF};font-size:30px;font-weight:600;color:{NAVY};">$ {tot_vis:,.0f}</span>
+</div>""", unsafe_allow_html=True)
 
-            for _, row in df.iterrows():
-                with st.expander(f"💳 {row['Tarjeta'] or '—'}  |  {row['Detalle']}  —  $ {row['Valor cuota']:,.0f}/mes ({row['Cuotas']} cuotas)"):
-                    c1, c2 = st.columns(2)
-                    c1.write(f"**Valor total:** {row['Moneda']} {row['Valor total']:,.0f}")
-                    c2.write(f"**1ra cuota:** {row['1ra cuota en']}")
-                    c1.write(f"**Pagado por:** {row['Pagado por']}")
-                    c2.write(f"**Tarjeta:** {row['Tarjeta']}")
-                    if row['Comentarios']:
-                        st.caption(row['Comentarios'])
-                    if st.button("Eliminar", key=f"del_t_{row['id']}"):
-                        db.eliminar_compra_tarjeta(row['id'])
+            for (cid, detalle_c, v_total, n, v_cuota, mon, primera, tarjeta_c, persona, coment, _) in vis:
+                partes = primera.strip().split()
+                try:
+                    mes_ini  = db.MESES.index(partes[0]) + 1
+                    anio_ini = int(partes[1])
+                    pagadas  = max(0, min(anio_sel * 12 + mes_sel - (anio_ini * 12 + mes_ini) + 1, n))
+                except Exception:
+                    pagadas = 1
+                pct = round(pagadas / n * 100) if n else 0
+                chip_bg = "#e8f0fe" if persona == "Moni" else "rgba(201,168,76,.2)"
+                chip_c  = BLUE     if persona == "Moni" else "#8a6d22"
+                with st.expander("", expanded=False):
+                    st.markdown(f"""
+<div style="display:flex;justify-content:space-between;align-items:center;">
+  <div style="display:flex;align-items:center;gap:11px;">
+    <span style="background:{chip_bg};color:{chip_c};font-size:10px;font-weight:800;
+          padding:4px 10px;border-radius:7px;">{tarjeta_c}</span>
+    <span style="font-size:15px;font-weight:600;color:{NAVY};">{detalle_c}</span>
+  </div>
+  <span style="font-family:{SERIF};font-size:18px;font-weight:600;color:{NAVY};">{mon} {v_cuota:,.0f}/mes</span>
+</div>
+<div style="display:flex;justify-content:space-between;margin:10px 0 5px;">
+  <span style="font-size:11px;font-weight:700;color:#6b7280;">cuota {pagadas} de {n}</span>
+  <span style="font-size:11px;font-weight:700;color:#b7973f;">{pct}%</span>
+</div>
+<div style="height:7px;border-radius:5px;background:rgba(15,27,53,.08);overflow:hidden;">
+  <div style="height:100%;background:linear-gradient(90deg,{GOLD},{GOLD_L});width:{pct}%;"></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-top:14px;">
+  <div><div style="font-size:9.5px;font-weight:800;color:#9aa0ab;">VALOR TOTAL</div>
+       <div style="font-family:{SERIF};font-size:17px;font-weight:600;">{mon} {v_total:,.0f}</div></div>
+  <div><div style="font-size:9.5px;font-weight:800;color:#9aa0ab;">RESTA PAGAR</div>
+       <div style="font-family:{SERIF};font-size:17px;font-weight:600;color:{GOLD_T};">{mon} {(n-pagadas)*v_cuota:,.0f}</div></div>
+  <div><div style="font-size:9.5px;font-weight:800;color:#9aa0ab;">1RA CUOTA</div>
+       <div style="font-size:13.5px;font-weight:600;">{primera}</div></div>
+  <div><div style="font-size:9.5px;font-weight:800;color:#9aa0ab;">PAGA</div>
+       <div style="font-size:13.5px;font-weight:600;">{persona}</div></div>
+</div>""", unsafe_allow_html=True)
+                    if coment:
+                        st.caption(coment)
+                    if st.button("Eliminar", key=f"del_t_{cid}"):
+                        db.eliminar_compra_tarjeta(cid)
                         st.rerun()
 
     with tab_nueva:
-        st.subheader("Registrar compra en cuotas")
         with st.form("form_cuota", clear_on_submit=True):
             detalle = st.text_input("Qué compraste", placeholder="ej: Zapatillas, Mesa, Celular...")
-            col_v, col_c, col_mon = st.columns(3)
+            col_v, col_c, col_mon = st.columns([1.4, 1, 1])
             valor  = col_v.number_input("Valor total", min_value=0.0, step=100.0, format="%.0f")
             cuotas = col_c.number_input("Cuotas", min_value=1, max_value=48, step=1, value=1)
             moneda = col_mon.selectbox("Moneda", ["$", "U$S"])
             if cuotas > 0 and valor > 0:
-                st.info(f"Valor por cuota: {moneda} {valor/cuotas:,.0f}")
+                st.info(f"Valor por cuota: **{moneda} {valor/cuotas:,.0f}**")
             col_t, col_p = st.columns(2)
             tarjeta    = col_t.selectbox("Tarjeta", db.TARJETAS)
             pagado_por = col_p.selectbox("¿Quién?", db.PERSONAS)
@@ -538,52 +639,20 @@ elif pagina == "💳 Cuotas tarjeta":
             fecha_compra      = col_fc.date_input("Fecha de compra", value=date.today())
             mes_primera_cuota = col_mp.selectbox("1ra cuota en", [f"{m} {anio_sel}" for m in db.MESES], index=datetime.today().month - 1)
             comentarios = st.text_input("Comentarios", placeholder="ej: con 20% descuento")
-            enviado = st.form_submit_button("Guardar", use_container_width=True, type="primary")
-        if enviado:
+            enviado_cuota = st.form_submit_button("Guardar compra", use_container_width=True)
+        if enviado_cuota:
             if valor <= 0 or not detalle:
                 st.error("Completá el detalle y el valor.")
             else:
                 db.agregar_compra_tarjeta(detalle, valor, cuotas, moneda, comentarios, str(fecha_compra), mes_primera_cuota, tarjeta, pagado_por)
                 st.success(f"✅ '{detalle}' guardada — {cuotas} cuota/s de {moneda} {valor/cuotas:,.0f}")
+                st.rerun()
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 5. GASTOS FIJOS
 # ══════════════════════════════════════════════════════════════════════
 elif pagina == "🔒 Gastos fijos":
-    st.markdown(f"""
-<style>
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-div[data-testid="stNumberInput"] input {{
-    border-radius: 9px !important;
-    border: 1px solid rgba(15,27,53,.14) !important;
-    background: #fff !important;
-}}
-div[data-testid="stNumberInput"] input {{
-    font-family: {SERIF} !important;
-    font-size: 16px !important;
-    text-align: right !important;
-    color: {NAVY} !important;
-}}
-div[data-testid="column"] button[kind="secondary"] {{
-    border: 1.5px solid rgba(45,107,196,.4) !important;
-    color: {BLUE} !important;
-    border-radius: 9px !important;
-    font-weight: 700 !important;
-}}
-/* Carta blanca debajo del header */
-div[data-testid="stVerticalBlockBorderWrapper"] {{
-    background: white !important;
-    border: 1px solid rgba(15,27,53,.08) !important;
-    border-top: none !important;
-    border-radius: 0 0 20px 20px !important;
-    box-shadow: 0 6px 24px rgba(15,27,53,.1) !important;
-    margin-top: -4px !important;
-    padding: 0 6px 8px !important;
-}}
-</style>
-""", unsafe_allow_html=True)
-
     gastos_fijos = db.get_gastos_fijos()
     excluidos_f  = db.get_fijos_excluidos_mes(anio_sel, mes_sel)
     activos      = [(gid, n, v, pg) for gid, n, v, _, pg in gastos_fijos]
