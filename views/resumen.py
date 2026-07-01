@@ -183,8 +183,7 @@ def render(ctx):
     p1_fijos         = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == persona_1)
     p2_fijos         = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == persona_2)
     total_fijos_base = p1_fijos + p2_fijos
-    oca_total, oca_items = db.get_total_oca_compartida_mes(anio_sel, mes_sel, casa_id)
-    total_fijos      = total_fijos_base + oca_total
+    total_fijos      = total_fijos_base
 
     total_por_persona       = db.get_totales_mes(anio_sel, mes_sel, casa_id)
     cuotas_persona, cuotas_items = db.get_total_cuotas_activas_mes(anio_sel, mes_sel, casa_id)
@@ -192,7 +191,7 @@ def render(ctx):
     p1_cuotas = cuotas_persona.get(persona_1, 0)
     p2_vars   = total_por_persona.get(persona_2, 0)
     p2_cuotas = cuotas_persona.get(persona_2, 0)
-    p2_pago        = p2_vars + p2_cuotas + p2_fijos + oca_total
+    p2_pago        = p2_vars + p2_cuotas + p2_fijos
     total_variable = sum(total_por_persona.values()) + sum(cuotas_persona.values())
     total_general  = total_fijos + total_variable
     p1_pago        = p1_vars + p1_cuotas + p1_fijos
@@ -289,17 +288,8 @@ def render(ctx):
             f'<div style="color:{GRAY};font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">NO APLICA ESTE MES</div>'
             f'{excl_html}</div>', unsafe_allow_html=True)
 
-    if cuotas_items or oca_items:
+    if cuotas_items:
         partes = []
-        for d, vc, cn, tc in oca_items:
-            partes.append(
-                f'<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;'
-                f'padding:10px 12px;margin-bottom:4px;background:rgba(201,168,76,.1);'
-                f'border-radius:10px;border-left:3px solid {GOLD};">'
-                f'<div><div style="color:{NAVY};font-size:13px;font-weight:600;">OCA VISA: {d}</div>'
-                f'<div style="color:{GRAY};font-size:11px;">OCA VISA (compartida) · cuota {cn}/{tc} · paga {persona_2}</div></div>'
-                f'<span style="color:{NAVY};font-size:15px;font-weight:700;">$ {vc:,.0f}</span></div>'
-            )
         for p, t, d, vc, cn, tc in cuotas_items:
             bg  = "#eef3fc" if p == persona_1 else "rgba(201,168,76,.1)"
             col = BLUE      if p == persona_1 else GOLD
