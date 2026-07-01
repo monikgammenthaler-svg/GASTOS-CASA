@@ -269,71 +269,71 @@ def render_resumen(st, mes_nombre, anio_sel,
                    total_ant=None, balance_ant=None, deudor_ant=None, acreedor_ant=None):
     p1_pct = round(p1_pago / (p1_pago + p2_pago) * 100) if (p1_pago + p2_pago) else 50
     st.markdown(f"""
-<div style="padding:34px 30px 8px;">
-  <div style="color:#b7973f;font-family:{DISPLAY};font-size:19px;font-weight:600;
+<div style="padding:28px 16px 8px;">
+  <div style="color:#b7973f;font-family:{DISPLAY};font-size:17px;font-weight:600;
        font-style:italic;letter-spacing:3px;text-transform:uppercase;">Resumen del mes</div>
-  <div style="color:{NAVY};font-family:{DISPLAY};font-size:72px;font-weight:600;
+  <div style="color:{NAVY};font-family:{DISPLAY};font-size:clamp(38px,11vw,72px);font-weight:600;
        line-height:.98;margin-top:4px;letter-spacing:-.5px;">{mes_nombre} {anio_sel}</div>
 </div>""", unsafe_allow_html=True)
     st.markdown(f"""
-<div style="padding:0 30px;display:flex;flex-direction:column;gap:8px;">
+<div style="padding:0 16px;display:flex;flex-direction:column;gap:8px;">
   <div style="display:flex;align-items:center;gap:10px;background:#faf8f4;border-left:3px solid {GOLD};
        border-radius:8px;padding:9px 13px;">
     <span style="width:6px;height:6px;border-radius:50%;background:{GOLD};flex:none;"></span>
-    <span style="font-size:12.5px;color:#6b5d38;">Los gastos de <b style="color:{NAVY};">{mes_nombre}</b>
+    <span style="font-size:12px;color:#6b5d38;">Los gastos de <b style="color:{NAVY};">{mes_nombre}</b>
     se pagan con el sueldo de <b style="color:{NAVY};">principios del mes siguiente</b>.</span>
   </div>
 </div>""", unsafe_allow_html=True)
     if balance_ant is not None and total_ant:
         st.markdown(f"""
-<div style="padding:8px 30px 0;">
+<div style="padding:8px 16px 0;">
   <div style="display:flex;align-items:center;gap:10px;background:#eef7f1;border-left:3px solid #1f9d57;
        border-radius:8px;padding:9px 13px;">
     <span style="width:6px;height:6px;border-radius:50%;background:#1f9d57;flex:none;"></span>
-    <span style="font-size:12.5px;color:#2f6b48;">A pagar <b>este mes</b>: Total
+    <span style="font-size:12px;color:#2f6b48;">A pagar <b>este mes</b>: Total
     <b>$ {total_ant:,.0f}</b> · {deudor_ant} le paga a {acreedor_ant} <b>$ {balance_ant:,.0f}</b></span>
   </div>
 </div>""", unsafe_allow_html=True)
     if balance < 1:
         hero_inner = f"""
       <div style="color:#86efac;font-size:11px;font-weight:800;letter-spacing:2px;">ESTÁN AL DÍA</div>
-      <div style="color:#fff;font-family:{SERIF};font-size:54px;font-weight:600;line-height:1.02;margin-top:6px;">$ 0</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:clamp(36px,12vw,54px);font-weight:600;line-height:1.02;margin-top:6px;">$ 0</div>
       <div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:2px;">Los dos gastaron lo mismo</div>"""
     else:
         hero_inner = f"""
       <div style="color:{GOLD_L};font-size:11px;font-weight:800;letter-spacing:2px;">{deudor} LE DEBE A {acreedor}</div>
-      <div style="color:#fff;font-family:{SERIF};font-size:54px;font-weight:600;line-height:1.02;margin-top:6px;">$ {balance:,.0f}</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:clamp(36px,12vw,54px);font-weight:600;line-height:1.02;margin-top:6px;">$ {balance:,.0f}</div>
       <div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:2px;">para quedar iguales</div>"""
     st.markdown(f"""
-<div style="margin:18px 24px 8px;background:linear-gradient(140deg,{NAVY},{NAVY2} 70%,{BLUE});
-     border-radius:18px;padding:26px 28px;box-shadow:0 6px 24px rgba(15,27,53,.22);">
+<div style="margin:18px 8px 8px;background:linear-gradient(140deg,{NAVY},{NAVY2} 70%,{BLUE});
+     border-radius:18px;padding:22px 16px;box-shadow:0 6px 24px rgba(15,27,53,.22);">
   <div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:3px;">LIQUIDACIÓN DEL MES</div>
   <div style="text-align:center;padding:14px 0 18px;">{hero_inner}</div>
   <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);">
     <div style="background:linear-gradient(90deg,{BLUE},#3f86e0);width:{p1_pct}%;"></div>
     <div style="background:linear-gradient(90deg,{GOLD},{GOLD_L});flex:1;"></div>
   </div>
-  <div style="display:flex;align-items:stretch;gap:14px;margin-top:16px;">
-    <div style="flex:1;background:rgba(45,107,196,.28);border-radius:13px;padding:14px 16px;text-align:center;">
-      <div style="color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:1px;">{persona_1.upper()} PAGÓ</div>
-      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {p1_pago:,.0f}</div>
-      <div style="color:rgba(255,255,255,.5);font-size:10.5px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
+  <div style="display:flex;align-items:stretch;gap:10px;margin-top:16px;">
+    <div style="flex:1;min-width:0;background:rgba(45,107,196,.28);border-radius:13px;padding:12px 10px;text-align:center;">
+      <div style="color:#93c5fd;font-size:10px;font-weight:700;letter-spacing:1px;">{persona_1.upper()} PAGÓ</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:clamp(18px,5.5vw,26px);font-weight:600;margin-top:4px;">$ {p1_pago:,.0f}</div>
+      <div style="color:rgba(255,255,255,.5);font-size:10px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
     </div>
-    <div style="display:flex;align-items:center;color:{GOLD_L};font-size:20px;opacity:.7;">⇄</div>
-    <div style="flex:1;background:rgba(201,168,76,.22);border-radius:13px;padding:14px 16px;text-align:center;">
-      <div style="color:{GOLD_L};font-size:11px;font-weight:700;letter-spacing:1px;">{persona_2.upper()} PAGÓ</div>
-      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {p2_pago:,.0f}</div>
-      <div style="color:rgba(255,255,255,.5);font-size:10.5px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
+    <div style="display:flex;align-items:center;color:{GOLD_L};font-size:18px;opacity:.7;flex:none;">⇄</div>
+    <div style="flex:1;min-width:0;background:rgba(201,168,76,.22);border-radius:13px;padding:12px 10px;text-align:center;">
+      <div style="color:{GOLD_L};font-size:10px;font-weight:700;letter-spacing:1px;">{persona_2.upper()} PAGÓ</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:clamp(18px,5.5vw,26px);font-weight:600;margin-top:4px;">$ {p2_pago:,.0f}</div>
+      <div style="color:rgba(255,255,255,.5);font-size:10px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
     </div>
   </div>
 </div>""", unsafe_allow_html=True)
     def _stat(label, valor, acento):
         return (f'<div style="background:#faf8f4;border:1px solid rgba(15,27,53,.07);'
-                f'border-top:3px solid {acento};border-radius:13px;padding:16px 12px;text-align:center;">'
-                f'<div style="color:#9aa0ab;font-size:10px;font-weight:800;letter-spacing:1.2px;">{label}</div>'
-                f'<div style="color:{NAVY};font-family:{SERIF};font-size:28px;font-weight:600;margin-top:4px;">$ {valor:,.0f}</div></div>')
+                f'border-top:3px solid {acento};border-radius:13px;padding:14px 8px;text-align:center;">'
+                f'<div style="color:#9aa0ab;font-size:9px;font-weight:800;letter-spacing:1px;">{label}</div>'
+                f'<div style="color:{NAVY};font-family:{SERIF};font-size:clamp(16px,5vw,28px);font-weight:600;margin-top:4px;">$ {valor:,.0f}</div></div>')
     st.markdown(f"""
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:16px 24px 28px;">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:16px 8px 28px;">
   {_stat("TOTAL DEL MES", total_mes, GOLD)}
   {_stat("VARIABLES", variables, BLUE)}
   {_stat("FIJOS", fijos, NAVY2)}
