@@ -443,7 +443,7 @@ if pagina == "📊 Resumen del mes":
         cu_total = total_f / 2
         n_filas = len(filas)
         th = (
-            f'<div style="display:grid;grid-template-columns:minmax(0,1fr) 54px 88px 70px;gap:8px;'
+            f'<div style="display:grid;grid-template-columns:minmax(80px,1fr) 52px 80px 62px;gap:6px;'
             f'align-items:center;padding:12px 10px 9px;border-bottom:1px solid rgba(15,27,53,.1);">'
             f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;">GASTO</span>'
             f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;">PAGA</span>'
@@ -453,11 +453,11 @@ if pagina == "📊 Resumen del mes":
         )
         def _fila(nombre, valor, pagado_por, pagado=False):
             if pagado_por == persona_1:
-                badge = (f'<span style="background:#e8f0fe;color:{BLUE};font-size:9.5px;font-weight:800;'
-                         f'letter-spacing:.5px;padding:3px 9px;border-radius:20px;">{persona_1.upper()}</span>')
+                badge = (f'<span style="background:#e8f0fe;color:{BLUE};font-size:9px;font-weight:800;'
+                         f'letter-spacing:0;padding:3px 6px;border-radius:20px;white-space:nowrap;">{persona_1.upper()}</span>')
             else:
-                badge = (f'<span style="background:rgba(201,168,76,.2);color:#8a6d22;font-size:9.5px;'
-                         f'font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:20px;">{persona_2.upper()}</span>')
+                badge = (f'<span style="background:rgba(201,168,76,.2);color:#8a6d22;font-size:9px;'
+                         f'font-weight:800;letter-spacing:0;padding:3px 6px;border-radius:20px;white-space:nowrap;">{persona_2.upper()}</span>')
             if pagado:
                 check = (f'<span style="width:21px;height:21px;border-radius:50%;flex:none;'
                          f'background:linear-gradient(135deg,{GOLD},{GOLD_L});color:{NAVY};display:flex;'
@@ -468,13 +468,13 @@ if pagina == "📊 Resumen del mes":
                          'border:2px solid rgba(15,27,53,.16);"></span>')
                 deco, op = "none", "1"
             return (
-                f'<div style="display:grid;grid-template-columns:minmax(0,1fr) 54px 88px 70px;gap:8px;'
+                f'<div style="display:grid;grid-template-columns:minmax(80px,1fr) 52px 80px 62px;gap:6px;'
                 f'align-items:center;padding:11px 10px;border-radius:10px;opacity:{op};">'
-                f'<div style="display:flex;align-items:center;gap:11px;min-width:0;">{check}'
-                f'<span style="color:{NAVY};font-size:13px;font-weight:500;word-break:break-word;'
-                f'overflow-wrap:anywhere;text-decoration:{deco};">{nombre}</span></div>'
-                f'<div>{badge}</div>'
-                f'<span style="text-align:right;color:{NAVY};font-family:{SERIF};font-size:16px;font-weight:500;'
+                f'<div style="display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;">{check}'
+                f'<span style="color:{NAVY};font-size:13px;font-weight:500;white-space:nowrap;'
+                f'overflow:hidden;text-overflow:ellipsis;text-decoration:{deco};">{nombre}</span></div>'
+                f'<div style="overflow:hidden;">{badge}</div>'
+                f'<span style="text-align:right;color:{NAVY};font-family:{SERIF};font-size:14px;font-weight:500;'
                 f'font-variant-numeric:tabular-nums;text-decoration:{deco};">$ {valor:,.0f}</span>'
                 f'<span style="text-align:right;color:#b7973f;font-size:12.5px;font-weight:700;'
                 f'font-variant-numeric:tabular-nums;">$ {valor/2:,.0f}</span>'
