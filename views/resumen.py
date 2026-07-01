@@ -115,8 +115,6 @@ def _render_hero(mes_nombre, anio_sel, p1_pago, p2_pago, corresponde_cu,
   <div style="display:flex;align-items:center;gap:10px;background:#faf8f4;border-left:3px solid {GOLD};
        border-radius:8px;padding:9px 13px;">
     <span style="width:6px;height:6px;border-radius:50%;background:{GOLD};flex:none;"></span>
-    <span style="font-size:12px;color:#6b5d38;">Los gastos de <b style="color:{NAVY};">{mes_nombre}</b>
-    se pagan con el sueldo de <b style="color:{NAVY};">principios del mes siguiente</b>.</span>
   </div>
 </div>""", unsafe_allow_html=True)
 
