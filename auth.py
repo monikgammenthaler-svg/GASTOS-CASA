@@ -53,8 +53,8 @@ def _tab_login():
 
 def _tab_signup():
     with st.form("form_signup"):
-        nombre_hogar = st.text_input("Nombre del hogar", placeholder="Ej: Moni & Guille")
-        usuario      = st.text_input("Elegí un usuario", placeholder="Ej: mg")
+        nombre_hogar = st.text_input("Nombre del hogar", placeholder="Ej: Familia Pérez")
+        usuario      = st.text_input("Elegí un usuario", placeholder="Ej: familiaperez")
         persona_1    = st.text_input("Persona 1", placeholder="Nombre")
         persona_2    = st.text_input("Persona 2", placeholder="Nombre")
         clave        = st.text_input("Contraseña", type="password")
