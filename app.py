@@ -1,4 +1,6 @@
+import time
 import streamlit as st
+import extra_streamlit_components as stx
 from datetime import datetime
 import auth
 import db
@@ -19,9 +21,21 @@ st.markdown('<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght
             unsafe_allow_html=True)
 st.markdown(estilos.css_global(), unsafe_allow_html=True)
 
+cookie_manager = stx.CookieManager(key="domus_cookie_manager")
 
 if not st.session_state.get("casa_id"):
-    auth.pantalla_login()
+    token = cookie_manager.get(auth.COOKIE_NOMBRE)
+    casa_id_cookie = auth.verificar_token_sesion(token) if token else None
+    if casa_id_cookie:
+        casa = db.obtener_casa_por_id(casa_id_cookie)
+        if casa:
+            _, _, _, nombre, persona_1_c, persona_2_c = casa
+            st.session_state["casa_id"]     = casa_id_cookie
+            st.session_state["personas"]    = [persona_1_c, persona_2_c]
+            st.session_state["casa_nombre"] = nombre
+
+if not st.session_state.get("casa_id"):
+    auth.pantalla_login(cookie_manager)
 
 # ── Variables de sesión ────────────────────────────────────────────────
 casa_id     = st.session_state["casa_id"]
@@ -71,6 +85,8 @@ with st.sidebar:
     if st.button("🚪 Cerrar sesión", use_container_width=True):
         for k in ["casa_id", "personas", "casa_nombre"]:
             st.session_state.pop(k, None)
+        cookie_manager.delete(auth.COOKIE_NOMBRE)
+        time.sleep(0.5)
         st.rerun()
 
 

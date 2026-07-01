@@ -36,6 +36,10 @@ Cada hogar tiene su propio `casa_id` en la DB. **Todos** los queries filtran por
 
 Los hogares (usuario, contraseña hasheada con bcrypt, nombre, personas) se guardan en la tabla `casas` de la DB — no en `secrets.toml`. Se crean desde la pantalla de login, pestaña "Crear hogar", protegida por un código de invitación (`st.secrets["auth"]["invite_code"]`, definido en `secrets.toml` local y en Streamlit Cloud → Settings → Secrets). Así se evita que gente ajena cree hogares en la base, y ninguna contraseña queda en texto plano en ningún archivo.
 
+### Sesión persistente (cookie)
+
+Al loguearse (o crear un hogar) se guarda una cookie `domus_session` con un token firmado (HMAC-SHA256, `st.secrets["auth"]["session_secret"]`) que expira a las 24hs. En cada carga, `app.py` valida esa cookie (`auth.verificar_token_sesion`) antes de mostrar el login, así un refresh de página no desloguea. Es stateless — no hay tabla de sesiones ni forma de revocar un token individual antes de tiempo, por eso la expiración es corta. Usa la librería `extra-streamlit-components` (`stx.CookieManager`).
+
 ## Contexto de sesión (`ctx`)
 
 Todas las vistas reciben un dict `ctx` con:
@@ -69,7 +73,7 @@ Tablas principales (todas con `casa_id`, salvo `casas`):
 - `gastos_fijos` — compromisos fijos mensuales (alquiler, servicios, etc.)
 - `fijos_excluidos_mes` — overrides para excluir un fijo en un mes específico
 - `compras_tarjeta` — compras en cuotas
-- `tarjetas` — tarjetas configuradas por cada hogar (nombre + dueño: persona_1, persona_2 o "Compartida")
+- `tarjetas` — tarjetas configuradas por cada hogar (nombre + dueño: persona_1, persona_2 o "Compartida"). `UNIQUE(casa_id, nombre, dueno)` — permite nombres repetidos (ej. dos "OCA") si son de dueños distintos. En los selectores para elegir tarjeta se muestra/guarda como `"nombre (dueño)"` para desambiguar.
 - `pendientes` — lista de compras/to-do
 - `gastos_personales` — gastos personales por persona (no impactan el total compartido)
 

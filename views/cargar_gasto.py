@@ -14,7 +14,7 @@ def render(ctx):
                 f'line-height:1;margin-bottom:10px;">Cargar gasto</div>', unsafe_allow_html=True)
 
     tiene_cuotas   = st.checkbox("¿Pago en cuotas?")
-    tarjetas_casa  = [t[1] for t in db.get_tarjetas(casa_id)]
+    tarjetas_casa  = [f"{nombre} ({dueno})" for _, nombre, dueno, _ in db.get_tarjetas(casa_id)]
 
     with st.form("form_gasto", clear_on_submit=True):
         col_f, col_p = st.columns([2, 1])

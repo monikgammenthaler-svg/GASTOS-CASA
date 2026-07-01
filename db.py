@@ -155,8 +155,19 @@ def init_db():
             nombre TEXT NOT NULL,
             dueno TEXT NOT NULL,
             activa INTEGER DEFAULT 1,
-            UNIQUE(casa_id, nombre)
+            UNIQUE(casa_id, nombre, dueno)
         )
+    """)
+    c.execute("ALTER TABLE tarjetas DROP CONSTRAINT IF EXISTS tarjetas_casa_id_nombre_key")
+    c.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'tarjetas_casa_id_nombre_dueno_key'
+            ) THEN
+                ALTER TABLE tarjetas ADD CONSTRAINT tarjetas_casa_id_nombre_dueno_key UNIQUE (casa_id, nombre, dueno);
+            END IF;
+        END $$;
     """)
 
     c.execute("ALTER TABLE gastos_fijos ADD COLUMN IF NOT EXISTS pagado_por TEXT DEFAULT 'Moni'")
@@ -225,6 +236,15 @@ def usuario_existe(usuario):
     c = conn.cursor()
     c.execute("SELECT 1 FROM casas WHERE usuario=%s", (usuario,))
     return c.fetchone() is not None
+
+def obtener_casa_por_id(casa_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute(
+        "SELECT id, usuario, password_hash, nombre, persona_1, persona_2 FROM casas WHERE id=%s",
+        (casa_id,),
+    )
+    return c.fetchone()
 
 
 # ── Tarjetas ─────────────────────────────────────────────────────────

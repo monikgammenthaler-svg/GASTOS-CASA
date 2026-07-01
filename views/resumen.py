@@ -255,8 +255,6 @@ def render(ctx):
   <div style="color:{NAVY};font-size:22px;font-weight:800;">$ {monto:,.0f}</div>
 </div>""", unsafe_allow_html=True)
 
-    st.markdown("---")
-
     # Compromisos del mes
     fijos_excluidos = [(nombre_ex,) for gid, nombre_ex, _, _, _ in gastos_fijos if gid in excluidos_res]
     filas_card      = [(nombre_f, v, pg) for gid, nombre_f, v, _, pg in gastos_fijos if gid not in excluidos_res]
