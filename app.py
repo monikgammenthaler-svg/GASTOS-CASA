@@ -9,7 +9,7 @@ def _init_once():
 _init_once()
 
 st.set_page_config(
-    page_title="Gastos de la Casa",
+    page_title="DOMUS",
     page_icon="🏠",
     layout="centered",
     initial_sidebar_state="expanded",
@@ -80,6 +80,12 @@ st.markdown(f"""
     div[data-testid="column"] button[kind="secondary"] {{
         border:1.5px solid rgba(45,107,196,.4) !important;
         color:{BLUE} !important; border-radius:9px !important; font-weight:700 !important;
+        padding:4px 6px !important; min-height:36px !important;
+    }}
+    @media(max-width:640px) {{
+        div[data-testid="column"] button[kind="secondary"] {{
+            font-size:15px !important; padding:2px 0 !important;
+        }}
     }}
     button[data-baseweb="tab"][aria-selected="true"] {{ color:{NAVY} !important; }}
     div[data-baseweb="tab-highlight"] {{ background:{GOLD} !important; }}
@@ -132,37 +138,71 @@ def _pantalla_login():
     casas = st.secrets.get("casas", {})
 
     st.markdown(f"""
-    <div style="max-width:420px;margin:60px auto 0;">
+    <div style="max-width:460px;margin:60px auto 0;">
       <div style="background:linear-gradient(140deg,{NAVY},{NAVY2} 70%,{BLUE});
            border-radius:22px;padding:36px 34px 30px;
-           box-shadow:0 10px 40px rgba(15,27,53,.28);text-align:center;margin-bottom:24px;">
+           box-shadow:0 10px 40px rgba(15,27,53,.28);text-align:center;margin-bottom:28px;">
         <div style="font-size:42px;margin-bottom:8px;">🏠</div>
-        <div style="color:{GOLD_L};font-size:11px;font-weight:800;letter-spacing:3px;margin-bottom:6px;">GASTOS DE LA CASA</div>
-        <div style="color:#fff;font-family:{DISPLAY};font-size:38px;font-weight:600;line-height:1.05;">Bienvenidos</div>
-        <div style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px;">Ingresá para ver tus gastos</div>
+        <div style="color:#fff;font-family:{DISPLAY};font-size:52px;font-weight:600;line-height:1;letter-spacing:2px;">DOMUS</div>
+        <div style="color:{GOLD_L};font-size:13px;font-weight:500;margin-top:6px;letter-spacing:.5px;">Gastos de nuestro hogar</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    nombres_casas = [cfg["nombre"] for cfg in casas.values()]
+    casa_key = st.session_state.get("login_casa_key")
 
-    with st.form("form_login"):
-        if len(nombres_casas) > 1:
-            casa_sel = st.selectbox("¿Quiénes son?", nombres_casas)
-        else:
-            casa_sel = nombres_casas[0] if nombres_casas else ""
-            st.markdown(f"<div style='text-align:center;color:{NAVY};font-weight:700;font-size:16px;margin-bottom:8px;'>{casa_sel}</div>", unsafe_allow_html=True)
-        clave = st.text_input("Contraseña", type="password", placeholder="Tu contraseña…")
-        ok = st.form_submit_button("Entrar →", use_container_width=True, type="primary")
+    if casa_key is None:
+        # ── Paso 1: elegir hogar ─────────────────────────────────────
+        st.markdown(
+            f'<div style="text-align:center;color:{NAVY};font-size:14px;font-weight:600;'
+            f'letter-spacing:.5px;margin-bottom:14px;">¿A qué hogar querés entrar?</div>',
+            unsafe_allow_html=True)
 
-    if ok:
-        for cfg in casas.values():
-            if cfg["nombre"] == casa_sel and cfg["password"] == clave:
+        iconos = ["🏡", "🏠", "🏘️", "🏗️"]
+        cols = st.columns(len(casas))
+        for i, (key, cfg) in enumerate(casas.items()):
+            icono = iconos[i % len(iconos)]
+            personas_txt = " & ".join(cfg["personas"])
+            with cols[i]:
+                st.markdown(f"""
+                <div style="background:#fff;border-radius:16px;padding:20px 12px 14px;
+                     box-shadow:0 2px 14px rgba(15,27,53,.1);text-align:center;
+                     border:2px solid rgba(15,27,53,.06);margin-bottom:8px;">
+                  <div style="font-size:30px;margin-bottom:8px;">{icono}</div>
+                  <div style="color:{NAVY};font-family:{DISPLAY};font-size:20px;font-weight:600;line-height:1.1;">{personas_txt}</div>
+                </div>""", unsafe_allow_html=True)
+                if st.button("Entrar", key=f"sel_{key}", use_container_width=True, type="primary"):
+                    st.session_state["login_casa_key"] = key
+                    st.rerun()
+    else:
+        # ── Paso 2: ingresar contraseña ──────────────────────────────
+        cfg = casas[casa_key]
+        personas_txt = " & ".join(cfg["personas"])
+        st.markdown(f"""
+        <div style="background:#fff;border-radius:16px;padding:18px 22px 14px;
+             box-shadow:0 2px 14px rgba(15,27,53,.1);border-left:4px solid {GOLD};
+             margin-bottom:20px;">
+          <div style="color:{GRAY};font-size:11px;font-weight:700;letter-spacing:1.5px;">HOGAR SELECCIONADO</div>
+          <div style="color:{NAVY};font-family:{DISPLAY};font-size:24px;font-weight:600;margin-top:2px;">{personas_txt}</div>
+        </div>""", unsafe_allow_html=True)
+
+        with st.form("form_login"):
+            clave = st.text_input("Contraseña", type="password", placeholder="Tu contraseña…")
+            ok = st.form_submit_button("Entrar →", use_container_width=True, type="primary")
+
+        if ok:
+            if cfg["password"] == clave:
                 st.session_state["casa_id"]     = int(cfg["id"])
                 st.session_state["personas"]    = list(cfg["personas"])
                 st.session_state["casa_nombre"] = cfg["nombre"]
+                st.session_state.pop("login_casa_key", None)
                 st.rerun()
-        st.error("Contraseña incorrecta. Intentá de nuevo.")
+            else:
+                st.error("Contraseña incorrecta. Intentá de nuevo.")
+
+        if st.button("← Cambiar hogar", use_container_width=False):
+            st.session_state.pop("login_casa_key", None)
+            st.rerun()
 
     st.stop()
 
@@ -183,7 +223,7 @@ with st.sidebar:
     st.markdown(f"""
 <div style="display:flex;align-items:center;gap:11px;padding:8px 6px 0;">
   <span style="font-size:26px;">🏠</span>
-  <span style="font-family:{DISPLAY};font-size:27px;font-weight:600;letter-spacing:.3px;">Gastos Casa</span>
+  <span style="font-family:{DISPLAY};font-size:27px;font-weight:600;letter-spacing:2px;">DOMUS</span>
 </div>
 <div style="color:rgba(255,255,255,.45);font-size:11px;padding:4px 6px 0;">{casa_nombre}</div>
 <div style="height:1px;background:rgba(255,255,255,.1);margin:14px 6px;"></div>
@@ -403,7 +443,7 @@ if pagina == "📊 Resumen del mes":
         cu_total = total_f / 2
         n_filas = len(filas)
         th = (
-            f'<div style="display:grid;grid-template-columns:1fr 76px 100px 92px;gap:10px;'
+            f'<div style="display:grid;grid-template-columns:minmax(0,1fr) 54px 88px 70px;gap:8px;'
             f'align-items:center;padding:12px 10px 9px;border-bottom:1px solid rgba(15,27,53,.1);">'
             f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;">GASTO</span>'
             f'<span style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#9aa0ab;">PAGA</span>'
@@ -428,13 +468,13 @@ if pagina == "📊 Resumen del mes":
                          'border:2px solid rgba(15,27,53,.16);"></span>')
                 deco, op = "none", "1"
             return (
-                f'<div style="display:grid;grid-template-columns:1fr 76px 100px 92px;gap:10px;'
+                f'<div style="display:grid;grid-template-columns:minmax(0,1fr) 54px 88px 70px;gap:8px;'
                 f'align-items:center;padding:11px 10px;border-radius:10px;opacity:{op};">'
                 f'<div style="display:flex;align-items:center;gap:11px;min-width:0;">{check}'
-                f'<span style="color:{NAVY};font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;'
-                f'text-overflow:ellipsis;text-decoration:{deco};">{nombre}</span></div>'
+                f'<span style="color:{NAVY};font-size:13px;font-weight:500;word-break:break-word;'
+                f'overflow-wrap:anywhere;text-decoration:{deco};">{nombre}</span></div>'
                 f'<div>{badge}</div>'
-                f'<span style="text-align:right;color:{NAVY};font-family:{SERIF};font-size:18px;font-weight:500;'
+                f'<span style="text-align:right;color:{NAVY};font-family:{SERIF};font-size:16px;font-weight:500;'
                 f'font-variant-numeric:tabular-nums;text-decoration:{deco};">$ {valor:,.0f}</span>'
                 f'<span style="text-align:right;color:#b7973f;font-size:12.5px;font-weight:700;'
                 f'font-variant-numeric:tabular-nums;">$ {valor/2:,.0f}</span>'
@@ -942,7 +982,7 @@ elif pagina == "📝 Pendientes":
                             st.session_state.pop("edit_pid", None)
                             st.rerun()
                 else:
-                    col_item, col_b1, col_b2, col_b3 = st.columns([10, 1, 1, 1])
+                    col_item, col_b1, col_b2, col_b3 = st.columns([6, 2, 2, 2])
                     with col_item:
                         st.markdown(
                             f'<div style="display:flex;align-items:center;gap:10px;'
