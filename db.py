@@ -1,3 +1,4 @@
+import bcrypt
 import psycopg2
 import psycopg2.extras
 import streamlit as st
@@ -17,14 +18,14 @@ CATEGORIAS = [
     "Otros",
 ]
 
-TARJETAS = [
-    "OCA VISA (compartida)",
-    "OCA MONI",
-    "OCA GUILLE",
-    "BROU MONI",
-    "BROU GUILLE",
-    "ITAU MONI",
-    "ITAU GUILLE",
+TARJETAS_SEED_CASA1 = [
+    ("OCA VISA (compartida)", "Compartida"),
+    ("OCA MONI", "Moni"),
+    ("OCA GUILLE", "Guille"),
+    ("BROU MONI", "Moni"),
+    ("BROU GUILLE", "Guille"),
+    ("ITAU MONI", "Moni"),
+    ("ITAU GUILLE", "Guille"),
 ]
 
 TIPOS_PAGO = ["Débito", "Crédito", "Efectivo"]
@@ -43,16 +44,22 @@ CATEGORIAS_PERSONAL = [
 ]
 
 
+def _connect(url):
+    conn = psycopg2.connect(url)
+    conn.autocommit = True
+    return conn
+
+
 @st.cache_resource
 def _db():
     url = st.secrets["supabase"]["db_url"]
-    return {"url": url, "conn": psycopg2.connect(url)}
+    return {"url": url, "conn": _connect(url)}
 
 
 def get_conn():
     d = _db()
     if d["conn"].closed:
-        d["conn"] = psycopg2.connect(d["url"])
+        d["conn"] = _connect(d["url"])
     return d["conn"]
 
 
@@ -130,6 +137,27 @@ def init_db():
             comentarios TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS casas (
+            id SERIAL PRIMARY KEY,
+            usuario TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            nombre TEXT NOT NULL,
+            persona_1 TEXT NOT NULL,
+            persona_2 TEXT NOT NULL,
+            creado_en TIMESTAMP DEFAULT now()
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS tarjetas (
+            id SERIAL PRIMARY KEY,
+            casa_id INTEGER NOT NULL DEFAULT 1,
+            nombre TEXT NOT NULL,
+            dueno TEXT NOT NULL,
+            activa INTEGER DEFAULT 1,
+            UNIQUE(casa_id, nombre)
+        )
+    """)
 
     c.execute("ALTER TABLE gastos_fijos ADD COLUMN IF NOT EXISTS pagado_por TEXT DEFAULT 'Moni'")
     c.execute("ALTER TABLE gastos_variables ADD COLUMN IF NOT EXISTS casa_id INTEGER DEFAULT 1")
@@ -148,7 +176,88 @@ def init_db():
         ]
         c.executemany("INSERT INTO gastos_fijos (nombre, valor, casa_id) VALUES (%s, %s, 1)", fijos_default)
 
+    c.execute("SELECT COUNT(*) FROM casas")
+    if c.fetchone()[0] == 0:
+        for cfg in st.secrets.get("casas", {}).values():
+            pw_hash = bcrypt.hashpw(cfg["password"].encode(), bcrypt.gensalt()).decode()
+            personas = list(cfg["personas"])
+            c.execute(
+                "INSERT INTO casas (id, usuario, password_hash, nombre, persona_1, persona_2) "
+                "VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO NOTHING",
+                (int(cfg["id"]), cfg["usuario"], pw_hash, cfg["nombre"], personas[0], personas[1]),
+            )
+        c.execute("SELECT setval('casas_id_seq', COALESCE((SELECT MAX(id) FROM casas), 1))")
+
+    c.execute("SELECT COUNT(*) FROM tarjetas WHERE casa_id=1")
+    if c.fetchone()[0] == 0:
+        c.executemany(
+            "INSERT INTO tarjetas (nombre, dueno, casa_id) VALUES (%s, %s, 1)",
+            TARJETAS_SEED_CASA1,
+        )
+
     conn.commit()
+
+
+# ── Casas / cuentas ──────────────────────────────────────────────────
+
+def crear_casa(usuario, password_hash, nombre, persona_1, persona_2):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO casas (usuario, password_hash, nombre, persona_1, persona_2) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+        (usuario, password_hash, nombre, persona_1, persona_2),
+    )
+    casa_id = c.fetchone()[0]
+    conn.commit()
+    return casa_id
+
+def obtener_casa_por_usuario(usuario):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute(
+        "SELECT id, usuario, password_hash, nombre, persona_1, persona_2 FROM casas WHERE usuario=%s",
+        (usuario,),
+    )
+    return c.fetchone()
+
+def usuario_existe(usuario):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT 1 FROM casas WHERE usuario=%s", (usuario,))
+    return c.fetchone() is not None
+
+
+# ── Tarjetas ─────────────────────────────────────────────────────────
+
+@st.cache_data(ttl=60)
+def get_tarjetas(casa_id=1):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute(
+        "SELECT id, nombre, dueno, activa FROM tarjetas WHERE activa=1 AND casa_id=%s ORDER BY id",
+        (casa_id,),
+    )
+    return c.fetchall()
+
+def agregar_tarjeta(nombre, dueno, casa_id=1):
+    conn = get_conn()
+    conn.cursor().execute(
+        "INSERT INTO tarjetas (nombre, dueno, casa_id) VALUES (%s,%s,%s)", (nombre, dueno, casa_id)
+    )
+    conn.commit()
+    _invalidar()
+
+def actualizar_dueno_tarjeta(tarjeta_id, dueno):
+    conn = get_conn()
+    conn.cursor().execute("UPDATE tarjetas SET dueno=%s WHERE id=%s", (dueno, tarjeta_id))
+    conn.commit()
+    _invalidar()
+
+def desactivar_tarjeta(tarjeta_id):
+    conn = get_conn()
+    conn.cursor().execute("UPDATE tarjetas SET activa=0 WHERE id=%s", (tarjeta_id,))
+    conn.commit()
+    _invalidar()
 
 
 # ── Gastos variables ─────────────────────────────────────────────────
@@ -341,34 +450,11 @@ def _parse_mes_cuota(mes_primera, anio_fallback=None):
     return None, None
 
 @st.cache_data(ttl=60)
-def get_total_oca_compartida_mes(anio, mes, casa_id=1):
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute(
-        "SELECT detalle, valor_cuota, cuotas, mes_primera_cuota FROM compras_tarjeta WHERE tarjeta = 'OCA VISA (compartida)' AND casa_id=%s",
-        (casa_id,),
-    )
-    compras = c.fetchall()
-    total = 0.0
-    detalle_items = []
-    for detalle, valor_cuota, n_cuotas, mes_primera in compras:
-        mes_inicio, anio_inicio = _parse_mes_cuota(mes_primera, anio_fallback=anio)
-        if mes_inicio is None or anio_inicio is None:
-            continue
-        inicio  = anio_inicio * 12 + mes_inicio
-        fin     = inicio + n_cuotas - 1
-        actual  = anio * 12 + mes
-        if inicio <= actual <= fin:
-            total += valor_cuota
-            detalle_items.append((detalle, valor_cuota, actual - inicio + 1, n_cuotas))
-    return total, detalle_items
-
-@st.cache_data(ttl=60)
 def get_total_cuotas_activas_mes(anio, mes, casa_id=1):
     conn = get_conn()
     c = conn.cursor()
     c.execute(
-        "SELECT pagado_por, tarjeta, detalle, valor_cuota, cuotas, mes_primera_cuota FROM compras_tarjeta WHERE tarjeta != 'OCA VISA (compartida)' AND casa_id=%s",
+        "SELECT pagado_por, tarjeta, detalle, valor_cuota, cuotas, mes_primera_cuota FROM compras_tarjeta WHERE casa_id=%s",
         (casa_id,),
     )
     compras = c.fetchall()

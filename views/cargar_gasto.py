@@ -13,7 +13,8 @@ def render(ctx):
     st.markdown(f'<div style="color:{NAVY};font-family:{DISPLAY};font-size:46px;font-weight:600;'
                 f'line-height:1;margin-bottom:10px;">Cargar gasto</div>', unsafe_allow_html=True)
 
-    tiene_cuotas = st.checkbox("¿Pago en cuotas?")
+    tiene_cuotas   = st.checkbox("¿Pago en cuotas?")
+    tarjetas_casa  = [t[1] for t in db.get_tarjetas(casa_id)]
 
     with st.form("form_gasto", clear_on_submit=True):
         col_f, col_p = st.columns([2, 1])
@@ -32,8 +33,11 @@ def render(ctx):
         if tiene_cuotas:
             st.markdown("---")
             col_nc, col_tc = st.columns(2)
-            num_cuotas    = col_nc.number_input("Cantidad de cuotas", min_value=2, max_value=48, step=1, value=3)
-            tarjeta_cuota = col_tc.selectbox("Tarjeta", db.TARJETAS)
+            num_cuotas = col_nc.number_input("Cantidad de cuotas", min_value=2, max_value=48, step=1, value=3)
+            if tarjetas_casa:
+                tarjeta_cuota = col_tc.selectbox("Tarjeta", tarjetas_casa)
+            else:
+                col_tc.info("No hay tarjetas configuradas. Agregá una en el menú **Tarjetas**.")
             if monto > 0:
                 st.info(f"Valor por cuota: $ {monto / num_cuotas:,.0f}  ·  "
                         f"{int(num_cuotas)} meses desde {db.MESES[fecha.month - 1]} {fecha.year}")
@@ -44,6 +48,8 @@ def render(ctx):
     if enviado:
         if monto <= 0:
             st.error("El monto debe ser mayor a cero.")
+        elif tiene_cuotas and not tarjeta_cuota:
+            st.error("Agregá una tarjeta en el menú Tarjetas antes de cargar un gasto en cuotas.")
         elif tiene_cuotas:
             db.agregar_gasto_en_cuotas(str(fecha), categoria, descripcion, pagado_por,
                                         tipo, tarjeta_cuota, monto, int(num_cuotas), casa_id)

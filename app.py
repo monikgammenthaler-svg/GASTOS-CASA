@@ -1,8 +1,9 @@
 import streamlit as st
 from datetime import datetime
+import auth
 import db
 import estilos
-from views import resumen, cargar_gasto, ver_gastos, cuotas, gastos_fijos, pendientes, personal
+from views import resumen, cargar_gasto, ver_gastos, cuotas, gastos_fijos, pendientes, personal, tarjetas
 
 # ── Inicialización DB (una sola vez por servidor) ──────────────────────
 @st.cache_resource
@@ -19,45 +20,8 @@ st.markdown('<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght
 st.markdown(estilos.css_global(), unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════
-# LOGIN
-# ══════════════════════════════════════════════════════════════════════
-def _pantalla_login():
-    casas = st.secrets.get("casas", {})
-    E = estilos
-
-    st.markdown(f"""
-<div style="max-width:420px;margin:60px auto 0;">
-  <div style="background:linear-gradient(140deg,{E.NAVY},{E.NAVY2} 70%,{E.BLUE});
-       border-radius:22px;padding:36px 34px 30px;
-       box-shadow:0 10px 40px rgba(15,27,53,.28);text-align:center;margin-bottom:28px;">
-    <div style="font-size:42px;margin-bottom:8px;">🏠</div>
-    <div style="color:#fff;font-family:{E.DISPLAY};font-size:52px;font-weight:600;
-         line-height:1;letter-spacing:2px;">DOMUS</div>
-    <div style="color:{E.GOLD_L};font-size:13px;font-weight:500;margin-top:6px;
-         letter-spacing:.5px;">Gastos de nuestro hogar</div>
-  </div>
-</div>""", unsafe_allow_html=True)
-
-    with st.form("form_login"):
-        usuario = st.text_input("Usuario", placeholder="Tu usuario…")
-        clave   = st.text_input("Contraseña", type="password", placeholder="Tu contraseña…")
-        ok      = st.form_submit_button("Entrar →", use_container_width=True, type="primary")
-
-    if ok:
-        for cfg in casas.values():
-            if cfg.get("usuario") == usuario and cfg["password"] == clave:
-                st.session_state["casa_id"]     = int(cfg["id"])
-                st.session_state["personas"]    = list(cfg["personas"])
-                st.session_state["casa_nombre"] = cfg["nombre"]
-                st.rerun()
-        st.error("Usuario o contraseña incorrectos.")
-
-    st.stop()
-
-
 if not st.session_state.get("casa_id"):
-    _pantalla_login()
+    auth.pantalla_login()
 
 # ── Variables de sesión ────────────────────────────────────────────────
 casa_id     = st.session_state["casa_id"]
@@ -83,7 +47,7 @@ with st.sidebar:
     pagina = st.radio(
         "Menú",
         ["📊 Resumen del mes", "➕ Cargar gasto", "📋 Ver gastos",
-         "💳 Cuotas tarjeta", "🔒 Gastos fijos", "📝 Pendientes", "💰 Personal"],
+         "💳 Cuotas tarjeta", "🗂️ Tarjetas", "🔒 Gastos fijos", "📝 Pendientes", "💰 Personal"],
         label_visibility="collapsed",
     )
 
@@ -128,6 +92,7 @@ if   pagina == "📊 Resumen del mes": resumen.render(ctx)
 elif pagina == "➕ Cargar gasto":    cargar_gasto.render(ctx)
 elif pagina == "📋 Ver gastos":      ver_gastos.render(ctx)
 elif pagina == "💳 Cuotas tarjeta":  cuotas.render(ctx)
+elif pagina == "🗂️ Tarjetas":        tarjetas.render(ctx)
 elif pagina == "🔒 Gastos fijos":    gastos_fijos.render(ctx)
 elif pagina == "📝 Pendientes":      pendientes.render(ctx)
 elif pagina == "💰 Personal":        personal.render(ctx)

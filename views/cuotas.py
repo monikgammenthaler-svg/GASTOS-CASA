@@ -67,7 +67,8 @@ def render(ctx):
         if not activas_mes:
             st.info("No hay cuotas activas para este mes.")
         else:
-            filtro_tarj = st.selectbox("Filtrar por tarjeta", ["Todas"] + db.TARJETAS, label_visibility="collapsed")
+            tarjetas_usadas = sorted({c[7] for c in activas_mes})
+            filtro_tarj = st.selectbox("Filtrar por tarjeta", ["Todas"] + tarjetas_usadas, label_visibility="collapsed")
             vis     = activas_mes if filtro_tarj == "Todas" else [c for c in activas_mes if c[7] == filtro_tarj]
             tot_vis = sum(c[4] for c in vis)
 
@@ -110,6 +111,10 @@ def render(ctx):
                         st.rerun()
 
     with tab_nueva:
+        tarjetas_casa = [t[1] for t in db.get_tarjetas(casa_id)]
+        if not tarjetas_casa:
+            st.info("No hay tarjetas configuradas. Agregá una en el menú **Tarjetas**.")
+
         with st.form(f"form_cuota_{st.session_state.form_cuota_n}", clear_on_submit=True):
             detalle = st.text_input("Qué compraste", placeholder="ej: Zapatillas, Mesa, Celular...")
             col_v, col_c, col_mon = st.columns([1.4, 1, 1])
@@ -119,7 +124,7 @@ def render(ctx):
             if cuotas > 0 and valor > 0:
                 st.info(f"Valor por cuota: **{moneda} {valor/cuotas:,.0f}**")
             col_t, col_p = st.columns(2)
-            tarjeta    = col_t.selectbox("Tarjeta", db.TARJETAS)
+            tarjeta    = col_t.selectbox("Tarjeta", tarjetas_casa) if tarjetas_casa else None
             pagado_por = col_p.selectbox("¿Quién?", personas)
             col_fc, col_mp = st.columns(2)
             fecha_compra      = col_fc.date_input("Fecha de compra", value=date.today())
@@ -132,6 +137,8 @@ def render(ctx):
         if enviado_cuota:
             if valor <= 0 or not detalle:
                 st.error("Completá el detalle y el valor.")
+            elif not tarjeta:
+                st.error("Agregá una tarjeta en el menú Tarjetas antes de cargar una compra.")
             else:
                 db.agregar_compra_tarjeta(detalle, valor, cuotas, moneda, comentarios,
                                            str(fecha_compra), mes_primera_cuota, tarjeta, pagado_por, casa_id)
