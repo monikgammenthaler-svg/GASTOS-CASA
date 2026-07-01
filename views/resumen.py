@@ -110,14 +110,6 @@ def _render_hero(mes_nombre, anio_sel, p1_pago, p2_pago, corresponde_cu,
        line-height:.98;margin-top:4px;letter-spacing:-.5px;">{mes_nombre} {anio_sel}</div>
 </div>""", unsafe_allow_html=True)
 
-    st.markdown(f"""
-<div style="padding:0 16px;">
-  <div style="display:flex;align-items:center;gap:10px;background:#faf8f4;border-left:3px solid {GOLD};
-       border-radius:8px;padding:9px 13px;">
-    <span style="width:6px;height:6px;border-radius:50%;background:{GOLD};flex:none;"></span>
-  </div>
-</div>""", unsafe_allow_html=True)
-
     if balance_ant is not None and total_ant:
         st.markdown(f"""
 <div style="padding:8px 16px 0;">
