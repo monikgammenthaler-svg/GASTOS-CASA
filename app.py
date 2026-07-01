@@ -3,7 +3,10 @@ import pandas as pd
 from datetime import date, datetime
 import db
 
-db.init_db()
+@st.cache_resource
+def _init_once():
+    db.init_db()
+_init_once()
 
 st.set_page_config(
     page_title="Gastos de la Casa",
@@ -12,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Paleta: Azul marino + Dorado + Blanco ────────────────────────────
+# ── Paleta ────────────────────────────────────────────────────────────
 NAVY   = "#0f1b35"
 NAVY2  = "#1a3360"
 BLUE   = "#2d6bc4"
@@ -30,14 +33,13 @@ st.markdown('<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght
 st.markdown(f"""
 <style>
     .stApp {{ background-color: #efeae6; }}
-    /* Sidebar */
     section[data-testid="stSidebar"] > div {{
         background: linear-gradient(180deg,{NAVY},#13213f) !important;
     }}
     section[data-testid="stSidebar"] * {{ color:{WHITE} !important; }}
     section[data-testid="stSidebar"] div[role="radiogroup"] label {{
-        display:flex; align-items:center; gap:12px;
-        padding:10px 12px; border-radius:11px; margin:2px 0;
+        display:flex; align-items:center; gap:14px;
+        padding:13px 14px; border-radius:12px; margin:3px 0;
         cursor:pointer; transition:background .15s;
     }}
     section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {{ background:rgba(255,255,255,.07); }}
@@ -46,12 +48,11 @@ st.markdown(f"""
         background:rgba(45,107,196,.26);
         box-shadow:inset 3px 0 0 {GOLD_L};
     }}
-    section[data-testid="stSidebar"] div[role="radiogroup"] p {{ font-size:14px; font-weight:600; }}
+    section[data-testid="stSidebar"] div[role="radiogroup"] p {{ font-size:17px; font-weight:600; }}
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div {{
         background:rgba(255,255,255,.06) !important;
         border:1px solid rgba(255,255,255,.14) !important; border-radius:10px !important;
     }}
-    /* Inputs globales */
     div[data-testid="stTextInput"] input,
     div[data-testid="stDateInput"] input {{
         border-radius:10px !important; border:1px solid rgba(15,27,53,.14) !important;
@@ -65,7 +66,6 @@ st.markdown(f"""
         font-family:{SERIF} !important; font-size:16px !important;
         text-align:right !important; color:{NAVY} !important; background:#fff !important;
     }}
-    /* Botones */
     .stButton > button[kind="primary"] {{
         background:linear-gradient(135deg,{NAVY},{BLUE}) !important;
         color:#fff !important; font-weight:700 !important;
@@ -81,30 +81,25 @@ st.markdown(f"""
         border:1.5px solid rgba(45,107,196,.4) !important;
         color:{BLUE} !important; border-radius:9px !important; font-weight:700 !important;
     }}
-    /* Tabs con acento dorado */
     button[data-baseweb="tab"][aria-selected="true"] {{ color:{NAVY} !important; }}
     div[data-baseweb="tab-highlight"] {{ background:{GOLD} !important; }}
-    /* Títulos */
     h1 {{ color:{NAVY} !important; }}
     h2, h3 {{ color:{NAVY2} !important; }}
     hr {{ border-color:#e2e8f0 !important; }}
-    .tag-moni  {{ background:{BLUE}; color:{WHITE}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
-    .tag-guille {{ background:{GOLD}; color:{NAVY}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
+    .tag-p1 {{ background:{BLUE}; color:{WHITE}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
+    .tag-p2 {{ background:{GOLD}; color:{NAVY}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
     .g-card {{ background:{WHITE}; border-radius:14px; padding:20px 24px; box-shadow:0 2px 12px rgba(15,27,53,0.08); margin-bottom:16px; }}
     div[data-testid="stSidebarNav"] {{ display:none; }}
-    /* Toggle dorado */
     div[data-testid="stToggle"] div[aria-checked="true"],
     div[data-testid="stToggle"] input:checked ~ div {{
         background-color:{GOLD} !important; border-color:{GOLD} !important;
     }}
-    /* Carta blanca para st.container(border=True) */
     div[data-testid="stVerticalBlockBorderWrapper"] {{
         background:white !important; border:1px solid rgba(15,27,53,.08) !important;
         border-top:none !important; border-radius:0 0 20px 20px !important;
         box-shadow:0 6px 24px rgba(15,27,53,.1) !important;
         margin-top:-4px !important; padding:0 6px 8px !important;
     }}
-    /* Sidebar selectbox: fondo oscuro (más específico que la regla global) */
     section[data-testid="stSidebar"] div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
         background:rgba(255,255,255,.10) !important;
         border:1px solid rgba(255,255,255,.22) !important;
@@ -113,21 +108,90 @@ st.markdown(f"""
     section[data-testid="stSidebar"] div[data-testid="stSelectbox"] svg {{
         color:{WHITE} !important; fill:{WHITE} !important;
     }}
+    section[data-testid="stSidebar"] .stButton > button {{
+        background: rgba(255,255,255,.07) !important;
+        color: rgba(255,255,255,.6) !important;
+        border: 1px solid rgba(255,255,255,.12) !important;
+        border-radius: 10px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+    }}
+    section[data-testid="stSidebar"] .stButton > button:hover {{
+        background: rgba(255,255,255,.13) !important;
+        color: {WHITE} !important;
+        border-color: rgba(255,255,255,.22) !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-# ── Sidebar ──────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════
+# LOGIN
+# ══════════════════════════════════════════════════════════════════════
+def _pantalla_login():
+    casas = st.secrets.get("casas", {})
+
+    st.markdown(f"""
+    <div style="max-width:420px;margin:60px auto 0;">
+      <div style="background:linear-gradient(140deg,{NAVY},{NAVY2} 70%,{BLUE});
+           border-radius:22px;padding:36px 34px 30px;
+           box-shadow:0 10px 40px rgba(15,27,53,.28);text-align:center;margin-bottom:24px;">
+        <div style="font-size:42px;margin-bottom:8px;">🏠</div>
+        <div style="color:{GOLD_L};font-size:11px;font-weight:800;letter-spacing:3px;margin-bottom:6px;">GASTOS DE LA CASA</div>
+        <div style="color:#fff;font-family:{DISPLAY};font-size:38px;font-weight:600;line-height:1.05;">Bienvenidos</div>
+        <div style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px;">Ingresá para ver tus gastos</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    nombres_casas = [cfg["nombre"] for cfg in casas.values()]
+
+    with st.form("form_login"):
+        if len(nombres_casas) > 1:
+            casa_sel = st.selectbox("¿Quiénes son?", nombres_casas)
+        else:
+            casa_sel = nombres_casas[0] if nombres_casas else ""
+            st.markdown(f"<div style='text-align:center;color:{NAVY};font-weight:700;font-size:16px;margin-bottom:8px;'>{casa_sel}</div>", unsafe_allow_html=True)
+        clave = st.text_input("Contraseña", type="password", placeholder="Tu contraseña…")
+        ok = st.form_submit_button("Entrar →", use_container_width=True, type="primary")
+
+    if ok:
+        for cfg in casas.values():
+            if cfg["nombre"] == casa_sel and cfg["password"] == clave:
+                st.session_state["casa_id"]     = int(cfg["id"])
+                st.session_state["personas"]    = list(cfg["personas"])
+                st.session_state["casa_nombre"] = cfg["nombre"]
+                st.rerun()
+        st.error("Contraseña incorrecta. Intentá de nuevo.")
+
+    st.stop()
+
+
+if not st.session_state.get("casa_id"):
+    _pantalla_login()
+
+# Variables de sesión disponibles tras login
+casa_id     = st.session_state["casa_id"]
+personas    = st.session_state["personas"]
+persona_1   = personas[0]
+persona_2   = personas[1]
+casa_nombre = st.session_state["casa_nombre"]
+
+
+# ── Sidebar ───────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown(f"""
 <div style="display:flex;align-items:center;gap:11px;padding:8px 6px 0;">
   <span style="font-size:26px;">🏠</span>
   <span style="font-family:{DISPLAY};font-size:27px;font-weight:600;letter-spacing:.3px;">Gastos Casa</span>
 </div>
-<div style="height:1px;background:rgba(255,255,255,.1);margin:18px 6px;"></div>
+<div style="color:rgba(255,255,255,.45);font-size:11px;padding:4px 6px 0;">{casa_nombre}</div>
+<div style="height:1px;background:rgba(255,255,255,.1);margin:14px 6px;"></div>
 """, unsafe_allow_html=True)
     pagina = st.radio(
         "Menú",
-        ["📊 Resumen del mes", "➕ Cargar gasto", "📋 Ver gastos", "💳 Cuotas tarjeta", "🔒 Gastos fijos", "📝 Pendientes"],
+        ["📊 Resumen del mes", "➕ Cargar gasto", "📋 Ver gastos",
+         "💳 Cuotas tarjeta", "🔒 Gastos fijos", "📝 Pendientes", "💰 Personal"],
         label_visibility="collapsed",
     )
     st.markdown('<div style="height:1px;background:rgba(255,255,255,.1);margin:18px 6px;"></div>', unsafe_allow_html=True)
@@ -137,6 +201,13 @@ with st.sidebar:
     st.markdown(f'<div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:1.5px;margin-top:8px;">MES</div>', unsafe_allow_html=True)
     mes_nombre = st.selectbox("Mes", db.MESES, index=datetime.today().month - 1, label_visibility="collapsed")
     mes_sel = db.MESES.index(mes_nombre) + 1
+
+    st.markdown('<div style="height:1px;background:rgba(255,255,255,.1);margin:18px 6px 10px;"></div>', unsafe_allow_html=True)
+    if st.button("🚪 Cerrar sesión", use_container_width=True):
+        for k in ["casa_id", "personas", "casa_nombre"]:
+            st.session_state.pop(k, None)
+        st.rerun()
+
 
 # ── Helper HTML ───────────────────────────────────────────────────────
 def banner(texto, tipo="info"):
@@ -149,12 +220,14 @@ def banner(texto, tipo="info"):
     border, bg = colores.get(tipo, (BLUE, "#e8f0fe"))
     return f"<div style='background:{bg};border-left:4px solid {border};padding:11px 16px;border-radius:8px;margin-bottom:14px;font-size:14px;color:{NAVY};'>{texto}</div>"
 
+
 def render_resumen(st, mes_nombre, anio_sel,
                    total_mes, variables, fijos,
-                   moni_pago, guille_pago, corresponde_cu,
+                   p1_pago, p2_pago, corresponde_cu,
                    deudor, acreedor, balance,
+                   persona_1, persona_2,
                    total_ant=None, balance_ant=None, deudor_ant=None, acreedor_ant=None):
-    moni_pct = round(moni_pago / (moni_pago + guille_pago) * 100) if (moni_pago + guille_pago) else 50
+    p1_pct = round(p1_pago / (p1_pago + p2_pago) * 100) if (p1_pago + p2_pago) else 50
     st.markdown(f"""
 <div style="padding:34px 30px 8px;">
   <div style="color:#b7973f;font-family:{DISPLAY};font-size:19px;font-weight:600;
@@ -197,19 +270,19 @@ def render_resumen(st, mes_nombre, anio_sel,
   <div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:3px;">LIQUIDACIÓN DEL MES</div>
   <div style="text-align:center;padding:14px 0 18px;">{hero_inner}</div>
   <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);">
-    <div style="background:linear-gradient(90deg,{BLUE},#3f86e0);width:{moni_pct}%;"></div>
+    <div style="background:linear-gradient(90deg,{BLUE},#3f86e0);width:{p1_pct}%;"></div>
     <div style="background:linear-gradient(90deg,{GOLD},{GOLD_L});flex:1;"></div>
   </div>
   <div style="display:flex;align-items:stretch;gap:14px;margin-top:16px;">
     <div style="flex:1;background:rgba(45,107,196,.28);border-radius:13px;padding:14px 16px;text-align:center;">
-      <div style="color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:1px;">MONI PAGÓ</div>
-      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {moni_pago:,.0f}</div>
+      <div style="color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:1px;">{persona_1.upper()} PAGÓ</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {p1_pago:,.0f}</div>
       <div style="color:rgba(255,255,255,.5);font-size:10.5px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
     </div>
     <div style="display:flex;align-items:center;color:{GOLD_L};font-size:20px;opacity:.7;">⇄</div>
     <div style="flex:1;background:rgba(201,168,76,.22);border-radius:13px;padding:14px 16px;text-align:center;">
-      <div style="color:{GOLD_L};font-size:11px;font-weight:700;letter-spacing:1px;">GUILLE PAGÓ</div>
-      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {guille_pago:,.0f}</div>
+      <div style="color:{GOLD_L};font-size:11px;font-weight:700;letter-spacing:1px;">{persona_2.upper()} PAGÓ</div>
+      <div style="color:#fff;font-family:{SERIF};font-size:26px;font-weight:600;margin-top:4px;">$ {p2_pago:,.0f}</div>
       <div style="color:rgba(255,255,255,.5);font-size:10.5px;margin-top:3px;">le corresponde $ {corresponde_cu:,.0f}</div>
     </div>
   </div>
@@ -226,73 +299,71 @@ def render_resumen(st, mes_nombre, anio_sel,
   {_stat("FIJOS", fijos, NAVY2)}
 </div>""", unsafe_allow_html=True)
 
+
 # ══════════════════════════════════════════════════════════════════════
 # 1. RESUMEN DEL MES
 # ══════════════════════════════════════════════════════════════════════
 if pagina == "📊 Resumen del mes":
     nombre_mes = db.MESES[mes_sel - 1]
 
-    mes_ant_num   = mes_sel - 1 if mes_sel > 1 else 12
-    anio_ant      = anio_sel if mes_sel > 1 else anio_sel - 1
-    nombre_mes_ant = db.MESES[mes_ant_num - 1]
+    mes_ant_num    = mes_sel - 1 if mes_sel > 1 else 12
+    anio_ant       = anio_sel if mes_sel > 1 else anio_sel - 1
 
-    mes_sig_num   = mes_sel + 1 if mes_sel < 12 else 1
-    nombre_mes_sig = db.MESES[mes_sig_num - 1]
-
-    gastos_fijos      = db.get_gastos_fijos()
+    gastos_fijos      = db.get_gastos_fijos(casa_id)
     excluidos_res     = db.get_fijos_excluidos_mes(anio_sel, mes_sel)
-    moni_fijos        = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == "Moni")
-    guille_fijos      = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == "Guille")
-    total_fijos_base  = moni_fijos + guille_fijos
-    oca_total, oca_items = db.get_total_oca_compartida_mes(anio_sel, mes_sel)
+    p1_fijos          = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == persona_1)
+    p2_fijos          = sum(v for gid, _, v, _, pg in gastos_fijos if gid not in excluidos_res and pg == persona_2)
+    total_fijos_base  = p1_fijos + p2_fijos
+    oca_total, oca_items = db.get_total_oca_compartida_mes(anio_sel, mes_sel, casa_id)
     total_fijos       = total_fijos_base + oca_total
-    total_por_persona = db.get_totales_mes(anio_sel, mes_sel)
-    cuotas_persona, cuotas_items = db.get_total_cuotas_activas_mes(anio_sel, mes_sel)
-    moni_vars         = total_por_persona.get("Moni", 0)
-    moni_cuotas       = cuotas_persona.get("Moni", 0)
-    guille_vars       = total_por_persona.get("Guille", 0)
-    guille_cuotas     = cuotas_persona.get("Guille", 0)
-    guille_pago       = guille_vars + guille_cuotas + guille_fijos
+    total_por_persona = db.get_totales_mes(anio_sel, mes_sel, casa_id)
+    cuotas_persona, cuotas_items = db.get_total_cuotas_activas_mes(anio_sel, mes_sel, casa_id)
+    p1_vars           = total_por_persona.get(persona_1, 0)
+    p1_cuotas         = cuotas_persona.get(persona_1, 0)
+    p2_vars           = total_por_persona.get(persona_2, 0)
+    p2_cuotas         = cuotas_persona.get(persona_2, 0)
+    p2_pago           = p2_vars + p2_cuotas + p2_fijos + oca_total
     total_variable    = sum(total_por_persona.values()) + sum(cuotas_persona.values())
     total_general     = total_fijos + total_variable
-    moni_pago         = moni_vars + moni_cuotas + moni_fijos
+    p1_pago           = p1_vars + p1_cuotas + p1_fijos
     mitad             = total_general / 2
-    balance           = moni_pago - mitad
+    balance           = p1_pago - mitad
 
-    tot_ant_persona    = db.get_totales_mes(anio_ant, mes_ant_num)
-    cuotas_ant, _      = db.get_total_cuotas_activas_mes(anio_ant, mes_ant_num)
+    tot_ant_persona   = db.get_totales_mes(anio_ant, mes_ant_num, casa_id)
+    cuotas_ant, _     = db.get_total_cuotas_activas_mes(anio_ant, mes_ant_num, casa_id)
     total_variable_ant = sum(tot_ant_persona.values()) + sum(cuotas_ant.values())
-    total_ant          = total_fijos + total_variable_ant
-    moni_ant           = tot_ant_persona.get("Moni", 0) + cuotas_ant.get("Moni", 0) + total_fijos_base
-    balance_ant        = moni_ant - total_ant / 2
+    total_ant         = total_fijos + total_variable_ant
+    p1_ant            = tot_ant_persona.get(persona_1, 0) + cuotas_ant.get(persona_1, 0) + total_fijos_base
+    balance_ant       = p1_ant - total_ant / 2
 
     if abs(balance) < 1:
         deudor, acreedor, balance_show = "—", "—", 0
     elif balance > 0:
-        deudor, acreedor, balance_show = "GUILLE", "MONI", balance
+        deudor, acreedor, balance_show = persona_2.upper(), persona_1.upper(), balance
     else:
-        deudor, acreedor, balance_show = "MONI", "GUILLE", abs(balance)
+        deudor, acreedor, balance_show = persona_1.upper(), persona_2.upper(), abs(balance)
 
     kw_ant = {}
     if total_ant > 0:
         if abs(balance_ant) < 1:
             kw_ant = dict(total_ant=total_ant, balance_ant=0, deudor_ant="—", acreedor_ant="—")
         elif balance_ant > 0:
-            kw_ant = dict(total_ant=total_ant, balance_ant=balance_ant, deudor_ant="Guille", acreedor_ant="Moni")
+            kw_ant = dict(total_ant=total_ant, balance_ant=balance_ant, deudor_ant=persona_2, acreedor_ant=persona_1)
         else:
-            kw_ant = dict(total_ant=total_ant, balance_ant=abs(balance_ant), deudor_ant="Moni", acreedor_ant="Guille")
+            kw_ant = dict(total_ant=total_ant, balance_ant=abs(balance_ant), deudor_ant=persona_1, acreedor_ant=persona_2)
 
     render_resumen(st, nombre_mes, anio_sel,
                    total_general, total_variable, total_fijos,
-                   moni_pago, guille_pago, mitad,
-                   deudor, acreedor, balance_show, **kw_ant)
+                   p1_pago, p2_pago, mitad,
+                   deudor, acreedor, balance_show,
+                   persona_1, persona_2, **kw_ant)
 
     st.markdown("---")
 
     # ── POR CATEGORÍA ────────────────────────────────────────────────
-    por_cat = db.get_por_categoria_mes(anio_sel, mes_sel)
+    por_cat = db.get_por_categoria_mes(anio_sel, mes_sel, casa_id)
     if por_cat:
-        st.markdown(f"<h3>Por categoría</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Por categoría</h3>", unsafe_allow_html=True)
         df_cat = pd.DataFrame(por_cat, columns=["Categoría", "Monto"])
         df_cat["Monto"] = df_cat["Monto"].round(0).astype(int)
         st.bar_chart(df_cat.set_index("Categoría"), height=220, color=BLUE)
@@ -312,9 +383,9 @@ if pagina == "📊 Resumen del mes":
     st.markdown("---")
 
     # ── POR TIPO DE PAGO ─────────────────────────────────────────────
-    por_tipo = db.get_por_tipo_mes(anio_sel, mes_sel)
+    por_tipo = db.get_por_tipo_mes(anio_sel, mes_sel, casa_id)
     if por_tipo:
-        st.markdown(f"<h3>Por tipo de pago</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Por tipo de pago</h3>", unsafe_allow_html=True)
         cols = st.columns(len(por_tipo))
         iconos = {"Débito": "💳", "Crédito": "🏦", "Efectivo": "💵"}
         for i, (tipo, monto) in enumerate(por_tipo):
@@ -328,8 +399,8 @@ if pagina == "📊 Resumen del mes":
     # ── GASTOS FIJOS ─────────────────────────────────────────────────
     st.markdown("---")
 
-    def tarjeta_compromisos(filas, total_fijos, moni_fijos, guille_fijos):
-        cu_total = total_fijos / 2
+    def tarjeta_compromisos(filas, total_f, p1_f, p2_f):
+        cu_total = total_f / 2
         n_filas = len(filas)
         th = (
             f'<div style="display:grid;grid-template-columns:1fr 76px 100px 92px;gap:10px;'
@@ -341,12 +412,12 @@ if pagina == "📊 Resumen del mes":
             f'</div>'
         )
         def _fila(nombre, valor, pagado_por, pagado=False):
-            if pagado_por == "Moni":
+            if pagado_por == persona_1:
                 badge = (f'<span style="background:#e8f0fe;color:{BLUE};font-size:9.5px;font-weight:800;'
-                         f'letter-spacing:.5px;padding:3px 9px;border-radius:20px;">MONI</span>')
+                         f'letter-spacing:.5px;padding:3px 9px;border-radius:20px;">{persona_1.upper()}</span>')
             else:
                 badge = (f'<span style="background:rgba(201,168,76,.2);color:#8a6d22;font-size:9.5px;'
-                         f'font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:20px;">GUILLE</span>')
+                         f'font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:20px;">{persona_2.upper()}</span>')
             if pagado:
                 check = (f'<span style="width:21px;height:21px;border-radius:50%;flex:none;'
                          f'background:linear-gradient(135deg,{GOLD},{GOLD_L});color:{NAVY};display:flex;'
@@ -378,7 +449,7 @@ if pagina == "📊 Resumen del mes":
             f'<div>'
             f'<div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:3px;">COMPROMISOS DEL MES</div>'
             f'<div style="color:#fff;font-family:{SERIF};font-size:40px;font-weight:500;margin-top:6px;'
-            f'letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;">$ {total_fijos:,.0f}</div>'
+            f'letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;">$ {total_f:,.0f}</div>'
             f'<div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;letter-spacing:.5px;margin-top:4px;">'
             f'{n_filas} conceptos · compartido 50 / 50</div>'
             f'</div>'
@@ -390,12 +461,12 @@ if pagina == "📊 Resumen del mes":
             f'</div></div>'
             f'<div style="display:flex;gap:9px;margin-top:18px;">'
             f'<div style="flex:1;background:rgba(45,107,196,.32);border-radius:11px;padding:9px 13px;">'
-            f'<div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:700;letter-spacing:.5px;">PAGA MONI</div>'
-            f'<div style="color:#fff;font-family:{SERIF};font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;">$ {moni_fijos:,.0f}</div>'
+            f'<div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:700;letter-spacing:.5px;">PAGA {persona_1.upper()}</div>'
+            f'<div style="color:#fff;font-family:{SERIF};font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;">$ {p1_f:,.0f}</div>'
             f'</div>'
             f'<div style="flex:1;background:rgba(201,168,76,.28);border-radius:11px;padding:9px 13px;">'
-            f'<div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:700;letter-spacing:.5px;">PAGA GUILLE</div>'
-            f'<div style="color:{GOLD_L};font-family:{SERIF};font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;">$ {guille_fijos:,.0f}</div>'
+            f'<div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:700;letter-spacing:.5px;">PAGA {persona_2.upper()}</div>'
+            f'<div style="color:{GOLD_L};font-family:{SERIF};font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;">$ {p2_f:,.0f}</div>'
             f'</div></div>'
             f'</div>'
         )
@@ -408,11 +479,8 @@ if pagina == "📊 Resumen del mes":
 
     fijos_excluidos = [(nombre_ex,) for gid, nombre_ex, _, _, _ in gastos_fijos if gid in excluidos_res]
     filas_card = [(nombre_f, v, pg) for gid, nombre_f, v, _, pg in gastos_fijos if gid not in excluidos_res]
-    for d, vc, cn, tc in oca_items:
-        filas_card.append((f"OCA VISA: {d} ({cn}/{tc})", vc, "Guille"))
-    guille_fijos_card = guille_fijos + oca_total
     st.markdown(
-        tarjeta_compromisos(filas_card, total_fijos, moni_fijos, guille_fijos_card),
+        tarjeta_compromisos(filas_card, total_fijos_base, p1_fijos, p2_fijos),
         unsafe_allow_html=True,
     )
 
@@ -431,11 +499,21 @@ if pagina == "📊 Resumen del mes":
             unsafe_allow_html=True,
         )
 
-    if cuotas_items:
+    if cuotas_items or oca_items:
         cuotas_html_parts = []
+        for d, vc, cn, tc in oca_items:
+            cuotas_html_parts.append(
+                f'<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;'
+                f'padding:10px 12px;margin-bottom:4px;background:rgba(201,168,76,.1);'
+                f'border-radius:10px;border-left:3px solid {GOLD};">'
+                f'<div><div style="color:{NAVY};font-size:13px;font-weight:600;">OCA VISA: {d}</div>'
+                f'<div style="color:{GRAY};font-size:11px;">OCA VISA (compartida) · cuota {cn}/{tc} · paga {persona_2}</div></div>'
+                f'<span style="color:{NAVY};font-size:15px;font-weight:700;">$ {vc:,.0f}</span>'
+                f'</div>'
+            )
         for p, t, d, vc, cn, tc in cuotas_items:
-            bg = "#eef3fc" if p == "Moni" else "rgba(201,168,76,.1)"
-            col = BLUE if p == "Moni" else GOLD
+            bg  = "#eef3fc" if p == persona_1 else "rgba(201,168,76,.1)"
+            col = BLUE      if p == persona_1 else GOLD
             cuotas_html_parts.append(
                 f'<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;'
                 f'padding:10px 12px;margin-bottom:4px;background:{bg};'
@@ -465,7 +543,7 @@ elif pagina == "➕ Cargar gasto":
     with st.form("form_gasto", clear_on_submit=True):
         col_f, col_p = st.columns([2, 1])
         fecha      = col_f.date_input("Fecha", value=date.today())
-        pagado_por = col_p.selectbox("¿Quién pagó?", db.PERSONAS)
+        pagado_por = col_p.selectbox("¿Quién pagó?", personas)
 
         col_cat, col_tipo = st.columns(2)
         categoria = col_cat.selectbox("Categoría", db.CATEGORIAS)
@@ -474,7 +552,7 @@ elif pagina == "➕ Cargar gasto":
         descripcion = st.text_input("Descripción", placeholder="ej: Super Paulino, taxi, farmacia...")
         monto       = st.number_input("Monto total ($)", min_value=0.0, step=10.0, format="%.0f")
 
-        num_cuotas   = 1
+        num_cuotas    = 1
         tarjeta_cuota = None
         if tiene_cuotas:
             st.markdown("---")
@@ -491,12 +569,11 @@ elif pagina == "➕ Cargar gasto":
         if monto <= 0:
             st.error("El monto debe ser mayor a cero.")
         elif tiene_cuotas:
-            db.agregar_gasto_en_cuotas(str(fecha), categoria, descripcion, pagado_por, tipo, tarjeta_cuota, monto, int(num_cuotas))
-            valor_cuota = round(monto / num_cuotas, 0)
-            st.success(f"✅ {int(num_cuotas)} cuotas de $ {valor_cuota:,.0f} guardadas.")
+            db.agregar_gasto_en_cuotas(str(fecha), categoria, descripcion, pagado_por, tipo, tarjeta_cuota, monto, int(num_cuotas), casa_id)
+            st.success(f"✅ {int(num_cuotas)} cuotas de $ {round(monto/num_cuotas,0):,.0f} guardadas.")
             st.balloons()
         else:
-            db.agregar_gasto(str(fecha), categoria, descripcion, pagado_por, comentarios, tipo, monto)
+            db.agregar_gasto(str(fecha), categoria, descripcion, pagado_por, comentarios, tipo, monto, casa_id)
             st.success(f"✅ Gasto de $ {monto:,.0f} guardado.")
             st.balloons()
 
@@ -508,13 +585,13 @@ elif pagina == "📋 Ver gastos":
     nombre_mes = db.MESES[mes_sel - 1]
     st.markdown(f"<h1>Gastos de {nombre_mes} {anio_sel}</h1>", unsafe_allow_html=True)
 
-    gastos = db.get_gastos_mes(anio_sel, mes_sel)
+    gastos = db.get_gastos_mes(anio_sel, mes_sel, casa_id)
 
     if not gastos:
         st.info("No hay gastos cargados para este mes.")
     else:
         cols_filter = st.columns(3)
-        filtro_persona = cols_filter[0].selectbox("Persona", ["Todos"] + db.PERSONAS)
+        filtro_persona = cols_filter[0].selectbox("Persona", ["Todos"] + personas)
         filtro_tipo    = cols_filter[1].selectbox("Tipo",    ["Todos"] + db.TIPOS_PAGO)
         filtro_cat     = cols_filter[2].selectbox("Categoría", ["Todas"] + db.CATEGORIAS)
 
@@ -532,7 +609,10 @@ elif pagina == "📋 Ver gastos":
         </div>""", unsafe_allow_html=True)
 
         for _, row in df.iterrows():
-            tag = f"<span class='tag-moni'>MONI</span>" if row['Pagado por'] == "Moni" else f"<span class='tag-guille'>GUILLE</span>"
+            if row['Pagado por'] == persona_1:
+                tag = f"<span class='tag-p1'>{persona_1.upper()}</span>"
+            else:
+                tag = f"<span class='tag-p2'>{persona_2.upper()}</span>"
             with st.expander(f"{row['Fecha']}  —  {row['Descripción'] or row['Categoría']}  |  $ {row['Monto']:,.0f}"):
                 c1, c2, c3 = st.columns(3)
                 c1.write(f"**Categoría:** {row['Categoría']}")
@@ -549,11 +629,9 @@ elif pagina == "📋 Ver gastos":
 # 4. CUOTAS TARJETA
 # ══════════════════════════════════════════════════════════════════════
 elif pagina == "💳 Cuotas tarjeta":
-    compras_all = db.get_compras_tarjeta()
-    # (id, detalle, valor, cuotas, valor_cuota, moneda, mes_primera_cuota, tarjeta, pagado_por, comentarios, fecha_compra)
+    compras_all = db.get_compras_tarjeta(casa_id)
 
     def _pagadas(primera, n):
-        """Calcula cuotas pagadas hasta el mes seleccionado, tolerante a formatos libres."""
         try:
             partes = (primera or "").strip().split()
             mes_ini = anio_ini = None
@@ -571,12 +649,11 @@ elif pagina == "💳 Cuotas tarjeta":
             if mes_ini is None:
                 return 0
             if anio_ini is None:
-                anio_ini = anio_sel  # asumir año del mes seleccionado
+                anio_ini = anio_sel
             return max(0, min(anio_sel * 12 + mes_sel - (anio_ini * 12 + mes_ini) + 1, n))
         except Exception:
             return 0
 
-    # Calcular pagadas para cada compra y filtrar solo activas este mes
     compras_con_p = [
         (cid, det, vt, n, vc, mon, prim, tarj, pers, com, _pagadas(prim, n))
         for (cid, det, vt, n, vc, mon, prim, tarj, pers, com, _) in compras_all
@@ -601,6 +678,9 @@ elif pagina == "💳 Cuotas tarjeta":
 </div>
 """, unsafe_allow_html=True)
 
+    if "form_cuota_n" not in st.session_state:
+        st.session_state.form_cuota_n = 0
+
     tab_ver, tab_nueva = st.tabs(["Ver cuotas", "Nueva compra"])
 
     with tab_ver:
@@ -621,8 +701,8 @@ elif pagina == "💳 Cuotas tarjeta":
 
             for (cid, detalle_c, v_total, n, v_cuota, mon, primera, tarjeta_c, persona, coment, pagadas) in vis:
                 pct = round(pagadas / n * 100) if n else 0
-                chip_bg = "#e8f0fe" if persona == "Moni" else "rgba(201,168,76,.2)"
-                chip_c  = BLUE     if persona == "Moni" else "#8a6d22"
+                chip_bg = "#e8f0fe" if persona == persona_1 else "rgba(201,168,76,.2)"
+                chip_c  = BLUE     if persona == persona_1 else "#8a6d22"
                 lbl = f"💳 {tarjeta_c}  ·  {detalle_c}  —  {mon} {v_cuota:,.0f}/mes  (cuota {pagadas}/{n})"
                 with st.expander(lbl, expanded=False):
                     st.markdown(f"""
@@ -650,7 +730,7 @@ elif pagina == "💳 Cuotas tarjeta":
                         st.rerun()
 
     with tab_nueva:
-        with st.form("form_cuota", clear_on_submit=True):
+        with st.form(f"form_cuota_{st.session_state.form_cuota_n}", clear_on_submit=True):
             detalle = st.text_input("Qué compraste", placeholder="ej: Zapatillas, Mesa, Celular...")
             col_v, col_c, col_mon = st.columns([1.4, 1, 1])
             valor  = col_v.number_input("Valor total", min_value=0.0, step=100.0, format="%.0f")
@@ -660,7 +740,7 @@ elif pagina == "💳 Cuotas tarjeta":
                 st.info(f"Valor por cuota: **{moneda} {valor/cuotas:,.0f}**")
             col_t, col_p = st.columns(2)
             tarjeta    = col_t.selectbox("Tarjeta", db.TARJETAS)
-            pagado_por = col_p.selectbox("¿Quién?", db.PERSONAS)
+            pagado_por = col_p.selectbox("¿Quién?", personas)
             col_fc, col_mp = st.columns(2)
             fecha_compra      = col_fc.date_input("Fecha de compra", value=date.today())
             mes_primera_cuota = col_mp.selectbox("1ra cuota en", [f"{m} {anio_sel}" for m in db.MESES], index=datetime.today().month - 1)
@@ -670,8 +750,9 @@ elif pagina == "💳 Cuotas tarjeta":
             if valor <= 0 or not detalle:
                 st.error("Completá el detalle y el valor.")
             else:
-                db.agregar_compra_tarjeta(detalle, valor, cuotas, moneda, comentarios, str(fecha_compra), mes_primera_cuota, tarjeta, pagado_por)
+                db.agregar_compra_tarjeta(detalle, valor, cuotas, moneda, comentarios, str(fecha_compra), mes_primera_cuota, tarjeta, pagado_por, casa_id)
                 st.success(f"✅ '{detalle}' guardada — {cuotas} cuota/s de {moneda} {valor/cuotas:,.0f}")
+                st.session_state.form_cuota_n += 1
                 st.rerun()
 
 
@@ -679,7 +760,7 @@ elif pagina == "💳 Cuotas tarjeta":
 # 5. GASTOS FIJOS
 # ══════════════════════════════════════════════════════════════════════
 elif pagina == "🔒 Gastos fijos":
-    gastos_fijos = db.get_gastos_fijos()
+    gastos_fijos = db.get_gastos_fijos(casa_id)
     excluidos_f  = db.get_fijos_excluidos_mes(anio_sel, mes_sel)
     activos      = [(gid, n, v, pg) for gid, n, v, _, pg in gastos_fijos]
     total        = sum(v for gid, _, v, _, _ in gastos_fijos if gid not in excluidos_f)
@@ -729,8 +810,8 @@ elif pagina == "🔒 Gastos fijos":
             col_n.markdown(f"<div style='font-size:17px;font-weight:600;color:{NAVY};"
                            f"padding-top:6px;'>{nombre_html}</div>", unsafe_allow_html=True)
 
-            idx_p = 1 if pagador == "Guille" else 0
-            nuevo_pagador = col_p.selectbox("Paga", ["Moni", "Guille"], index=idx_p,
+            idx_p = 1 if pagador == persona_2 else 0
+            nuevo_pagador = col_p.selectbox("Paga", personas, index=idx_p,
                                             key=f"pg_{gid}", label_visibility="collapsed", disabled=excluido)
             if nuevo_pagador != pagador:
                 db.actualizar_pagador_fijo(gid, nuevo_pagador)
@@ -766,7 +847,7 @@ elif pagina == "🔒 Gastos fijos":
             nuevo_monto  = c2.number_input("Valor", min_value=0.0, step=10.0, format="%.0f", label_visibility="collapsed")
             if c3.form_submit_button("Agregar", use_container_width=True):
                 if nuevo_nombre and nuevo_monto > 0:
-                    db.agregar_gasto_fijo(nuevo_nombre, nuevo_monto)
+                    db.agregar_gasto_fijo(nuevo_nombre, nuevo_monto, casa_id)
                     st.success(f"✅ {nuevo_nombre} agregado")
                     st.rerun()
                 else:
@@ -781,10 +862,9 @@ elif pagina == "📝 Pendientes":
         "Supermercado": "🛒", "Limpieza": "🧹", "Farmacia": "💊",
         "Ropa": "👕", "Hogar": "🏠", "Trámite": "📋", "Otro": "📌",
     }
-    ICON_QUIEN = {"Ambos": "👫", "Moni": "👩", "Guille": "👨"}
+    ICON_QUIEN = {"Ambos": "👫", persona_1: "🙋", persona_2: "🙋"}
     PRIO_COLOR = {"Alta": "#ef4444", "Normal": GOLD, "Baja": GRAY}
 
-    # ── Formulario rápido ────────────────────────────────────────────
     st.markdown(
         f'<div style="background:{WHITE};border-radius:16px;padding:18px 22px;'
         f'box-shadow:0 2px 12px rgba(15,27,53,0.09);margin-bottom:16px;">'
@@ -797,22 +877,20 @@ elif pagina == "📝 Pendientes":
         col_cat, col_pri, col_quien = st.columns(3)
         categoria  = col_cat.selectbox("Categoría", db.CATEGORIAS_PENDIENTES)
         prioridad  = col_pri.selectbox("Prioridad", db.PRIORIDADES)
-        asignado_a = col_quien.selectbox("Para quién", ["Ambos"] + db.PERSONAS)
+        asignado_a = col_quien.selectbox("Para quién", ["Ambos"] + personas)
         enviado = st.form_submit_button("➕ Agregar", use_container_width=True, type="primary")
 
     if enviado:
         if descripcion.strip():
-            db.agregar_pendiente(descripcion.strip(), categoria, prioridad, asignado_a)
+            db.agregar_pendiente(descripcion.strip(), categoria, prioridad, asignado_a, casa_id)
             st.rerun()
         else:
             st.error("Escribí algo primero.")
 
-    # ── Lista ────────────────────────────────────────────────────────
-    pendientes = db.get_pendientes(solo_activos=False)
+    pendientes = db.get_pendientes(solo_activos=False, casa_id=casa_id)
     activos    = [p for p in pendientes if not p[5]]
     hechos     = [p for p in pendientes if p[5]]
 
-    # Agrupar por categoría
     from collections import defaultdict
     por_cat = defaultdict(list)
     for p in activos:
@@ -836,7 +914,6 @@ elif pagina == "📝 Pendientes":
 
         for cat, items in por_cat.items():
             icono = ICON_CAT.get(cat, "📌")
-            # Encabezado de categoría
             st.markdown(
                 f'<div style="display:flex;align-items:center;gap:8px;'
                 f'margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid {GOLD};">'
@@ -889,7 +966,6 @@ elif pagina == "📝 Pendientes":
                             db.eliminar_pendiente(pid)
                             st.rerun()
 
-    # ── Comprados ────────────────────────────────────────────────────
     if hechos:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander(f"✅ Ya comprado / hecho ({len(hechos)})"):
@@ -908,3 +984,145 @@ elif pagina == "📝 Pendientes":
                     if st.button("↩", key=f"undo_{pid}", help="Deshacer"):
                         db.marcar_pendiente(pid, False)
                         st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 7. GASTOS PERSONALES
+# ══════════════════════════════════════════════════════════════════════
+elif pagina == "💰 Personal":
+
+    if "persona_personal" not in st.session_state:
+        st.session_state.persona_personal = None
+
+    st.markdown(f"""
+    <div style="background:linear-gradient(140deg,{NAVY},{NAVY2} 70%,{BLUE});
+         border-radius:18px;padding:28px 30px 22px;margin-bottom:20px;
+         box-shadow:0 6px 24px rgba(15,27,53,.22);">
+      <div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:3px;margin-bottom:6px;">GASTOS PERSONALES</div>
+      <div style="color:#fff;font-family:{DISPLAY};font-size:46px;font-weight:600;line-height:1;">¿De quién?</div>
+      <div style="color:rgba(255,255,255,.55);font-size:13px;margin-top:6px;">Elegí tu nombre para ver y cargar tus gastos personales.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_m, col_g = st.columns(2)
+    persona_sel = st.session_state.persona_personal
+    with col_m:
+        if st.button(
+            f"💙  {persona_1}",
+            use_container_width=True,
+            type="primary" if persona_sel == persona_1 else "secondary",
+            key="btn_p1_personal",
+        ):
+            st.session_state.persona_personal = persona_1
+            st.rerun()
+    with col_g:
+        if st.button(
+            f"💛  {persona_2}",
+            use_container_width=True,
+            type="primary" if persona_sel == persona_2 else "secondary",
+            key="btn_p2_personal",
+        ):
+            st.session_state.persona_personal = persona_2
+            st.rerun()
+
+    persona_sel = st.session_state.persona_personal
+
+    if persona_sel:
+        color_persona    = BLUE  if persona_sel == persona_1 else GOLD
+        color_persona_bg = "#e8f0fe" if persona_sel == persona_1 else GOLD_P
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        total_personal = db.get_total_personal_mes(anio_sel, mes_sel, persona_sel, casa_id)
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg,{color_persona},{NAVY});
+             border-radius:14px;padding:20px 24px;margin-bottom:18px;
+             box-shadow:0 4px 16px rgba(15,27,53,.18);">
+          <div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:800;letter-spacing:2.5px;">
+            GASTOS PERSONALES · {mes_nombre.upper()} {anio_sel}
+          </div>
+          <div style="color:#fff;font-family:{SERIF};font-size:44px;font-weight:600;line-height:1.05;margin-top:6px;">
+            $ {total_personal:,.0f}
+          </div>
+          <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:2px;">{persona_sel} · solo uso personal</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        tab_ver_p, tab_nuevo_p = st.tabs(["Ver gastos", "Nuevo gasto"])
+
+        with tab_ver_p:
+            gastos_p = db.get_gastos_personales_mes(anio_sel, mes_sel, persona_sel, casa_id)
+            if not gastos_p:
+                st.markdown(f"""
+                <div style="text-align:center;padding:36px 20px;background:{color_persona_bg};
+                     border-radius:14px;border:1px dashed {color_persona};">
+                  <div style="font-size:32px;margin-bottom:10px;">💸</div>
+                  <div style="color:{NAVY};font-size:15px;font-weight:600;">Sin gastos personales en {mes_nombre}</div>
+                  <div style="color:{GRAY};font-size:13px;margin-top:4px;">Cargá uno desde "Nuevo gasto"</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                por_cat_p = {}
+                for gid, fecha_g, cat_g, desc_g, monto_g, coment_g in gastos_p:
+                    por_cat_p.setdefault(cat_g, []).append((gid, fecha_g, desc_g, monto_g, coment_g))
+
+                for cat_g, items in por_cat_p.items():
+                    subtotal = sum(m for _, _, _, m, _ in items)
+                    st.markdown(f"""
+                    <div style="display:flex;justify-content:space-between;align-items:center;
+                         padding:6px 12px;margin:10px 0 4px;
+                         border-left:3px solid {color_persona};border-radius:0 6px 6px 0;
+                         background:rgba(0,0,0,.03);">
+                      <span style="color:{NAVY};font-size:12px;font-weight:700;letter-spacing:.5px;">{cat_g.upper()}</span>
+                      <span style="color:{color_persona};font-size:13px;font-weight:700;">$ {subtotal:,.0f}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    for gid, fecha_g, desc_g, monto_g, coment_g in items:
+                        col_info, col_del = st.columns([11, 1])
+                        with col_info:
+                            nota = f' <span style="color:{GRAY};font-size:11px;">— {coment_g}</span>' if coment_g else ""
+                            st.markdown(
+                                f'<div style="display:grid;grid-template-columns:1fr auto;gap:10px;'
+                                f'align-items:center;padding:9px 12px;margin-bottom:3px;'
+                                f'background:#fff;border-radius:10px;'
+                                f'box-shadow:0 1px 4px rgba(15,27,53,.06);">'
+                                f'<div><div style="color:{NAVY};font-size:13px;font-weight:600;">{desc_g}{nota}</div>'
+                                f'<div style="color:{GRAY};font-size:11px;margin-top:1px;">{fecha_g}</div></div>'
+                                f'<span style="color:{color_persona};font-size:15px;font-weight:700;">$ {monto_g:,.0f}</span>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+                        with col_del:
+                            if st.button("✕", key=f"del_gp_{gid}", help="Eliminar"):
+                                db.eliminar_gasto_personal(gid)
+                                st.rerun()
+
+        with tab_nuevo_p:
+            if "form_personal_n" not in st.session_state:
+                st.session_state.form_personal_n = 0
+
+            with st.form(f"form_personal_{st.session_state.form_personal_n}", clear_on_submit=True):
+                st.markdown(f"""
+                <div style="background:linear-gradient(135deg,{NAVY},{NAVY2});border-radius:14px;
+                     padding:18px 20px 10px;margin-bottom:16px;">
+                  <div style="color:{GOLD_L};font-size:10px;font-weight:800;letter-spacing:2px;">NUEVO GASTO PERSONAL</div>
+                  <div style="color:#fff;font-family:{DISPLAY};font-size:28px;font-weight:600;margin-top:4px;">{persona_sel}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                col1, col2 = st.columns(2)
+                fecha_p = col1.date_input("Fecha", value=date.today(), key="fp_fecha")
+                cat_p   = col2.selectbox("Categoría", db.CATEGORIAS_PERSONAL, key="fp_cat")
+                desc_p  = st.text_input("Descripción", placeholder="ej: zapatillas, cena con amigas…", key="fp_desc")
+                monto_p = st.number_input("Monto ($)", min_value=0.0, step=10.0, format="%.0f", key="fp_monto")
+                coment_p = st.text_input("Comentarios (opcional)", placeholder="ej: en oferta, cuotas…", key="fp_coment")
+                enviado_p = st.form_submit_button("Guardar gasto personal", use_container_width=True, type="primary")
+
+            if enviado_p:
+                if monto_p <= 0 or not desc_p.strip():
+                    st.error("Completá la descripción y el monto.")
+                else:
+                    db.agregar_gasto_personal(str(fecha_p), cat_p, desc_p.strip(), persona_sel, monto_p, coment_p.strip(), casa_id)
+                    st.success(f"✅ '{desc_p}' guardado — $ {monto_p:,.0f}")
+                    st.session_state.form_personal_n += 1
+                    st.rerun()
