@@ -230,11 +230,10 @@ def render(ctx):
   {_stat("FIJOS", total_fijos, NAVY2)}
 </div>""", unsafe_allow_html=True)
 
-    st.markdown("---")
-
     # Por categoría
     por_cat = db.get_por_categoria_mes(anio_sel, mes_sel, casa_id)
     if por_cat:
+        st.markdown("---")
         st.markdown("<h3>Por categoría</h3>", unsafe_allow_html=True)
         df_cat = pd.DataFrame(por_cat, columns=["Categoría", "Monto"])
         df_cat["Monto"] = df_cat["Monto"].round(0).astype(int)
@@ -251,11 +250,10 @@ def render(ctx):
   <div style="width:38px;font-size:11px;color:{GRAY};">{pct:.0f}%</div>
 </div>""", unsafe_allow_html=True)
 
-    st.markdown("---")
-
     # Por tipo de pago
     por_tipo = db.get_por_tipo_mes(anio_sel, mes_sel, casa_id)
     if por_tipo:
+        st.markdown("---")
         st.markdown("<h3>Por tipo de pago</h3>", unsafe_allow_html=True)
         iconos = {"Débito": "💳", "Crédito": "🏦", "Efectivo": "💵"}
         cols = st.columns(len(por_tipo))
