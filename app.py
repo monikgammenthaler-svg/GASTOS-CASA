@@ -5,7 +5,7 @@ from datetime import datetime
 import auth
 import db
 import estilos
-from views import resumen, cargar_gasto, ver_gastos, cuotas, gastos_fijos, pendientes, personal, tarjetas
+from views import resumen, cargar_gasto, ver_gastos, cuotas, gastos_fijos, pendientes, personal, tarjetas, integrantes
 
 # ── Inicialización DB (una sola vez por servidor) ──────────────────────
 @st.cache_resource
@@ -60,7 +60,8 @@ with st.sidebar:
     pagina = st.radio(
         "Menú",
         ["📊 Resumen del mes", "➕ Cargar gasto", "📋 Ver gastos",
-         "💳 Cuotas tarjeta", "🗂️ Tarjetas", "🔒 Gastos fijos", "📝 Pendientes", "💰 Personal"],
+         "💳 Cuotas tarjeta", "🗂️ Tarjetas", "👥 Integrantes",
+         "🔒 Gastos fijos", "📝 Pendientes", "💰 Personal"],
         label_visibility="collapsed",
     )
 
@@ -106,6 +107,7 @@ elif pagina == "➕ Cargar gasto":    cargar_gasto.render(ctx)
 elif pagina == "📋 Ver gastos":      ver_gastos.render(ctx)
 elif pagina == "💳 Cuotas tarjeta":  cuotas.render(ctx)
 elif pagina == "🗂️ Tarjetas":        tarjetas.render(ctx)
+elif pagina == "👥 Integrantes":     integrantes.render(ctx)
 elif pagina == "🔒 Gastos fijos":    gastos_fijos.render(ctx)
 elif pagina == "📝 Pendientes":      pendientes.render(ctx)
 elif pagina == "💰 Personal":        personal.render(ctx)

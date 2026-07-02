@@ -284,6 +284,31 @@ def obtener_personas_casa(casa_id):
     c.execute("SELECT nombre FROM personas_casa WHERE casa_id=%s ORDER BY orden", (casa_id,))
     return [row[0] for row in c.fetchall()]
 
+def agregar_persona_casa(casa_id, nombre):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT COALESCE(MAX(orden),0)+1 FROM personas_casa WHERE casa_id=%s", (casa_id,))
+    orden = c.fetchone()[0]
+    c.execute("INSERT INTO personas_casa (casa_id, nombre, orden) VALUES (%s,%s,%s)", (casa_id, nombre, orden))
+    conn.commit()
+
+def renombrar_persona_casa(casa_id, nombre_viejo, nombre_nuevo):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("UPDATE personas_casa SET nombre=%s WHERE casa_id=%s AND nombre=%s", (nombre_nuevo, casa_id, nombre_viejo))
+    for tabla, col in [("gastos_variables", "pagado_por"), ("gastos_fijos", "pagado_por"),
+                        ("compras_tarjeta", "pagado_por"), ("gastos_personales", "persona"),
+                        ("pendientes", "asignado_a"), ("tarjetas", "dueno")]:
+        c.execute(f"UPDATE {tabla} SET {col}=%s WHERE casa_id=%s AND {col}=%s", (nombre_nuevo, casa_id, nombre_viejo))
+    conn.commit()
+    _invalidar()
+
+def eliminar_persona_casa(casa_id, nombre):
+    conn = get_conn()
+    conn.cursor().execute("DELETE FROM personas_casa WHERE casa_id=%s AND nombre=%s", (casa_id, nombre))
+    conn.commit()
+    _invalidar()
+
 
 # ── Tarjetas ─────────────────────────────────────────────────────────
 
