@@ -6,10 +6,9 @@ from estilos import *
 def render(ctx):
     casa_id   = ctx["casa_id"]
     personas  = ctx["personas"]
-    persona_1 = ctx["persona_1"]
-    persona_2 = ctx["persona_2"]
     anio_sel  = ctx["anio_sel"]
     mes_sel   = ctx["mes_sel"]
+    n_personas = len(personas) or 1
 
     gastos_fijos = db.get_gastos_fijos(casa_id)
     excluidos_f  = db.get_fijos_excluidos_mes(anio_sel, mes_sel)
@@ -27,7 +26,7 @@ def render(ctx):
       <div style="color:#fff;font-family:{DISPLAY};font-size:40px;font-weight:600;
            letter-spacing:.2px;line-height:1.05;">Gastos fijos mensuales</div>
       <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:3px;">
-           Estos valores se dividen entre dos (c/u) · {n_activos} activos</div>
+           Estos valores se dividen entre {n_personas} (c/u) · {n_activos} activos</div>
     </div>
     <div style="text-align:right;">
       <div style="color:rgba(255,255,255,.55);font-size:10px;font-weight:700;letter-spacing:2px;">TOTAL FIJOS</div>
@@ -36,7 +35,7 @@ def render(ctx):
            background:rgba(201,168,76,.22);border:1px solid rgba(245,208,96,.35);
            border-radius:9px;padding:4px 11px;">
         <span style="color:rgba(245,208,96,.8);font-size:9.5px;font-weight:800;letter-spacing:1px;">LE TOCA C/U</span>
-        <span style="color:{GOLD_L};font-family:{SERIF};font-size:19px;font-weight:600;">$ {total/2:,.0f}</span>
+        <span style="color:{GOLD_L};font-family:{SERIF};font-size:19px;font-weight:600;">$ {total/n_personas:,.0f}</span>
       </div>
     </div>
   </div>
@@ -59,7 +58,7 @@ def render(ctx):
             col_n.markdown(f"<div style='font-size:17px;font-weight:600;color:{NAVY};"
                            f"padding-top:6px;'>{nombre_html}</div>", unsafe_allow_html=True)
 
-            idx_p = 1 if pagador == persona_2 else 0
+            idx_p = personas.index(pagador) if pagador in personas else 0
             nuevo_pagador = col_p.selectbox("Paga", personas, index=idx_p,
                                             key=f"pg_{gid}", label_visibility="collapsed", disabled=excluido)
             if nuevo_pagador != pagador:
@@ -74,7 +73,7 @@ def render(ctx):
                                "font-size:12px;padding-top:8px;'>no aplica</div>", unsafe_allow_html=True)
             else:
                 col_c.markdown(f"<div style='text-align:center;font-family:{SERIF};font-size:22px;"
-                               f"font-weight:600;color:{GOLD_T};padding-top:2px;'>$ {nuevo_valor/2:,.0f}</div>",
+                               f"font-weight:600;color:{GOLD_T};padding-top:2px;'>$ {nuevo_valor/n_personas:,.0f}</div>",
                                unsafe_allow_html=True)
 
             if col_b.button("Guardar", key=f"save_{gid}", disabled=excluido, use_container_width=True):

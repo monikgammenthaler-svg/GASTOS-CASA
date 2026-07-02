@@ -84,34 +84,54 @@ def _tab_login(cookie_manager):
     if ok:
         casa = db.obtener_casa_por_usuario(usuario.strip().lower())
         if casa and verificar_password(clave, casa[2]):
-            casa_id, _, _, nombre, persona_1, persona_2 = casa
-            _loguear(cookie_manager, casa_id, [persona_1, persona_2], nombre)
+            casa_id, _, _, nombre = casa
+            personas = db.obtener_personas_casa(casa_id)
+            _loguear(cookie_manager, casa_id, personas, nombre)
         else:
             st.error("Usuario o contraseña incorrectos.")
 
 
 def _tab_signup(cookie_manager):
-    with st.form("form_signup"):
-        nombre_hogar = st.text_input("Nombre del hogar", placeholder="Ej: Familia Pérez")
-        usuario      = st.text_input("Elegí un usuario", placeholder="Ej: familiaperez")
-        persona_1    = st.text_input("Persona 1", placeholder="Nombre")
-        persona_2    = st.text_input("Persona 2", placeholder="Nombre")
-        clave        = st.text_input("Contraseña", type="password")
-        clave2       = st.text_input("Confirmar contraseña", type="password")
-        invitacion   = st.text_input("Código de invitación", type="password",
-                                      placeholder="Te lo pasó quien te invitó")
-        ok           = st.form_submit_button("Crear hogar →", use_container_width=True, type="primary")
+    st.session_state.setdefault("signup_slot_ids", [0, 1])
+    st.session_state.setdefault("signup_next_id", 2)
+    slot_ids = st.session_state.signup_slot_ids
+
+    nombre_hogar = st.text_input("Nombre del hogar", placeholder="Ej: Familia Pérez", key="signup_nombre_hogar")
+    usuario      = st.text_input("Elegí un usuario", placeholder="Ej: familiaperez", key="signup_usuario")
+
+    st.markdown("**Integrantes del hogar**")
+    for i, slot_id in enumerate(slot_ids):
+        col_p, col_x = st.columns([5, 1])
+        col_p.text_input(f"Persona {i + 1}", placeholder="Nombre", key=f"signup_persona_{slot_id}",
+                          label_visibility="collapsed")
+        if len(slot_ids) > 1:
+            if col_x.button("✕", key=f"signup_quitar_{slot_id}", use_container_width=True):
+                st.session_state.signup_slot_ids.remove(slot_id)
+                st.session_state.pop(f"signup_persona_{slot_id}", None)
+                st.rerun()
+    if st.button("+ Agregar persona", key="signup_agregar_persona"):
+        st.session_state.signup_slot_ids.append(st.session_state.signup_next_id)
+        st.session_state.signup_next_id += 1
+        st.rerun()
+
+    clave      = st.text_input("Contraseña", type="password", key="signup_clave")
+    clave2     = st.text_input("Confirmar contraseña", type="password", key="signup_clave2")
+    invitacion = st.text_input("Código de invitación", type="password",
+                                placeholder="Te lo pasó quien te invitó", key="signup_invitacion")
+    ok = st.button("Crear hogar →", use_container_width=True, type="primary", key="signup_ok")
 
     if not ok:
         return
 
     usuario = usuario.strip().lower()
+    personas = [st.session_state.get(f"signup_persona_{slot_id}", "").strip() for slot_id in slot_ids]
+    personas = [p for p in personas if p]
     codigo_valido = st.secrets.get("auth", {}).get("invite_code", "")
 
     if not codigo_valido or invitacion != codigo_valido:
         st.error("Código de invitación incorrecto.")
-    elif not nombre_hogar or not usuario or not persona_1 or not persona_2:
-        st.error("Completá todos los campos.")
+    elif not nombre_hogar or not usuario or not personas:
+        st.error("Completá el nombre del hogar, el usuario y al menos una persona.")
     elif len(clave) < 6:
         st.error("La contraseña debe tener al menos 6 caracteres.")
     elif clave != clave2:
@@ -119,8 +139,12 @@ def _tab_signup(cookie_manager):
     elif db.usuario_existe(usuario):
         st.error("Ese usuario ya existe. Elegí otro.")
     else:
-        casa_id = db.crear_casa(usuario, hash_password(clave), nombre_hogar, persona_1, persona_2)
-        _loguear(cookie_manager, casa_id, [persona_1, persona_2], nombre_hogar)
+        casa_id = db.crear_casa(usuario, hash_password(clave), nombre_hogar, personas)
+        for slot_id in slot_ids:
+            st.session_state.pop(f"signup_persona_{slot_id}", None)
+        st.session_state.pop("signup_slot_ids", None)
+        st.session_state.pop("signup_next_id", None)
+        _loguear(cookie_manager, casa_id, personas, nombre_hogar)
 
 
 def pantalla_login(cookie_manager=None):

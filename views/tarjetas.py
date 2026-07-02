@@ -6,9 +6,7 @@ from estilos import *
 
 def render(ctx):
     casa_id   = ctx["casa_id"]
-    persona_1 = ctx["persona_1"]
-    persona_2 = ctx["persona_2"]
-    duenos    = [persona_1, persona_2, "Compartida"]
+    duenos    = ctx["personas"] + ["Compartida"]
 
     tarjetas = db.get_tarjetas(casa_id)
 

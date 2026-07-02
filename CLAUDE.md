@@ -34,7 +34,13 @@ views/
 
 Cada hogar tiene su propio `casa_id` en la DB. **Todos** los queries filtran por `casa_id` — ningún hogar ve datos de otro.
 
-Los hogares (usuario, contraseña hasheada con bcrypt, nombre, personas) se guardan en la tabla `casas` de la DB — no en `secrets.toml`. Se crean desde la pantalla de login, pestaña "Crear hogar", protegida por un código de invitación (`st.secrets["auth"]["invite_code"]`, definido en `secrets.toml` local y en Streamlit Cloud → Settings → Secrets). Así se evita que gente ajena cree hogares en la base, y ninguna contraseña queda en texto plano en ningún archivo.
+Los hogares (usuario, contraseña hasheada con bcrypt, nombre) se guardan en la tabla `casas` de la DB — no en `secrets.toml`. Se crean desde la pantalla de login, pestaña "Crear hogar", protegida por un código de invitación (`st.secrets["auth"]["invite_code"]`, definido en `secrets.toml` local y en Streamlit Cloud → Settings → Secrets). Así se evita que gente ajena cree hogares en la base, y ninguna contraseña queda en texto plano en ningún archivo.
+
+### Personas del hogar (N personas, no solo 2)
+
+Un hogar puede tener **cualquier cantidad de personas** (1, 2, 3...), no solo 2. Se guardan en la tabla `personas_casa` (`casa_id`, `nombre`, `orden`), cargadas dinámicamente en el signup con un botón "+ Agregar persona". El reparto de gastos es **en partes iguales entre todos** (`total / cantidad de personas`), no necesariamente 50/50. La liquidación ("quién le debe a quién") usa un algoritmo de settle-up greedy (`resumen.py:_liquidar`) que da el mínimo de transferencias necesarias — para 2 personas da exactamente una transferencia (igual que el comportamiento original); para 1 persona sola, siempre da $0 (no hay a quién deberle).
+
+Los colores por persona salen de `estilos.PALETA_PERSONAS` vía `estilos.color_persona(nombre, personas)` — asignación por posición, no por nombre fijo. Las columnas `casas.persona_1`/`persona_2` quedan en la tabla sin usarse (compatibilidad con datos viejos), todo el código lee de `personas_casa` / `db.obtener_personas_casa()`.
 
 ### Sesión persistente (cookie)
 
@@ -46,9 +52,7 @@ Todas las vistas reciben un dict `ctx` con:
 ```python
 ctx = {
     "casa_id": int,
-    "personas": ["Nombre1", "Nombre2"],
-    "persona_1": str,
-    "persona_2": str,
+    "personas": ["Nombre1", "Nombre2", ...],   # cualquier cantidad, orden estable
     "anio_sel": int,
     "mes_sel": int,       # 1-12
     "mes_nombre": str,    # "Enero", "Febrero", etc.
@@ -65,10 +69,13 @@ WHITE="#ffffff" GRAY="#6b7280"
 SERIF="Newsreader, serif"   DISPLAY="Cormorant, serif"
 ```
 
+`PALETA_PERSONAS` (lista de colores) + `color_persona(nombre, personas)` + `tint(hex, alpha)` — para asignarle un color consistente a cada persona del hogar sin hardcodear "persona 1 = azul, persona 2 = dorado".
+
 ## Base de datos
 
 Tablas principales (todas con `casa_id`, salvo `casas`):
-- `casas` — hogares: usuario, `password_hash` (bcrypt), nombre, persona_1, persona_2
+- `casas` — hogares: usuario, `password_hash` (bcrypt), nombre (`persona_1`/`persona_2` sin uso, ver abajo)
+- `personas_casa` — personas de cada hogar: `casa_id`, `nombre`, `orden`. Cantidad libre (no solo 2).
 - `gastos_variables` — gastos del mes cargados manualmente
 - `gastos_fijos` — compromisos fijos mensuales (alquiler, servicios, etc.)
 - `fijos_excluidos_mes` — overrides para excluir un fijo en un mes específico
