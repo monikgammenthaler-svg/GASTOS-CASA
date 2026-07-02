@@ -48,17 +48,11 @@ def verificar_token_sesion(token: str):
 
 def _header():
     E = estilos
+    logo = E.logo_data_uri("assets/logo_full.png")
     st.markdown(f"""
-<div style="max-width:420px;margin:60px auto 0;">
-  <div style="background:linear-gradient(140deg,{E.NAVY},{E.NAVY2} 70%,{E.BLUE});
-       border-radius:22px;padding:36px 34px 30px;
-       box-shadow:0 10px 40px rgba(15,27,53,.28);text-align:center;margin-bottom:28px;">
-    <div style="font-size:42px;margin-bottom:8px;">🏠</div>
-    <div style="color:#fff;font-family:{E.DISPLAY};font-size:52px;font-weight:600;
-         line-height:1;letter-spacing:2px;">DOMUS</div>
-    <div style="color:{E.GOLD_L};font-size:13px;font-weight:500;margin-top:6px;
-         letter-spacing:.5px;">Gastos de nuestro hogar</div>
-  </div>
+<div style="max-width:360px;margin:60px auto 28px;">
+  <img src="{logo}" style="width:100%;display:block;border-radius:22px;
+       box-shadow:0 10px 40px rgba(15,27,53,.28);" />
 </div>""", unsafe_allow_html=True)
 
 
@@ -177,11 +171,28 @@ def _tab_signup(cookie_manager):
 
 def pantalla_login(cookie_manager=None):
     _header()
-    tab_login, tab_signup, tab_reset = st.tabs(["Entrar", "Crear hogar", "Olvidé mi contraseña"])
-    with tab_login:
+    vista = st.session_state.get("auth_vista", "login")
+
+    if vista == "login":
         _tab_login(cookie_manager)
-    with tab_signup:
-        _tab_signup(cookie_manager)
-    with tab_reset:
-        _tab_reset()
+        st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("¿No tenés cuenta? Creá una", use_container_width=True):
+                st.session_state.auth_vista = "signup"
+                st.rerun()
+        with col2:
+            if st.button("¿Olvidaste tu contraseña?", use_container_width=True):
+                st.session_state.auth_vista = "reset"
+                st.rerun()
+    else:
+        if st.button("← Volver a entrar"):
+            st.session_state.auth_vista = "login"
+            st.rerun()
+        if vista == "signup":
+            st.markdown("### Crear hogar")
+            _tab_signup(cookie_manager)
+        else:
+            st.markdown("### Olvidé mi contraseña")
+            _tab_reset()
     st.stop()

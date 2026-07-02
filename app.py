@@ -47,9 +47,10 @@ casa_nombre = st.session_state["casa_nombre"]
 # SIDEBAR
 # ══════════════════════════════════════════════════════════════════════
 with st.sidebar:
+    logo = estilos.logo_data_uri("assets/logo_icon.png")
     st.markdown(f"""
 <div style="display:flex;align-items:center;gap:11px;padding:8px 6px 0;">
-  <span style="font-size:26px;">🏠</span>
+  <img src="{logo}" style="width:34px;height:34px;object-fit:contain;border-radius:8px;" />
   <span style="font-family:{estilos.DISPLAY};font-size:27px;font-weight:600;letter-spacing:2px;">DOMUS</span>
 </div>
 <div style="color:rgba(255,255,255,.45);font-size:11px;padding:4px 6px 0;">{casa_nombre}</div>

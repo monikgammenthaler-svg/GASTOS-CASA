@@ -1,3 +1,7 @@
+import base64
+import functools
+from pathlib import Path
+
 NAVY   = "#0f1b35"
 NAVY2  = "#1a3360"
 BLUE   = "#2d6bc4"
@@ -23,6 +27,12 @@ def tint(hex_color, alpha=0.16):
     h = hex_color.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     return f"rgba({r},{g},{b},{alpha})"
+
+
+@functools.lru_cache(maxsize=None)
+def logo_data_uri(path):
+    data = base64.b64encode(Path(path).read_bytes()).decode()
+    return f"data:image/png;base64,{data}"
 
 
 def css_global():
@@ -54,6 +64,12 @@ def css_global():
         border-radius:10px !important; background:#f4f6fb !important;
         border:1px solid rgba(15,27,53,.1) !important;
     }}
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] * {{
+        color:{NAVY} !important; fill:{NAVY} !important;
+    }}
+    div[data-testid="stSelectbox"] input {{
+        color:{NAVY} !important;
+    }}
     div[data-testid="stNumberInput"] input {{
         border-radius:9px !important; border:1px solid rgba(15,27,53,.14) !important;
         font-family:{SERIF} !important; font-size:16px !important;
@@ -74,6 +90,11 @@ def css_global():
         border:1.5px solid rgba(45,107,196,.4) !important;
         color:{BLUE} !important; border-radius:9px !important; font-weight:700 !important;
         padding:4px 6px !important; min-height:36px !important;
+    }}
+    div[data-testid="stExpander"] summary,
+    div[data-testid="stExpander"] summary p,
+    div[data-testid="stExpander"] summary svg {{
+        color:{NAVY} !important; fill:{NAVY} !important;
     }}
     @media(max-width:640px) {{
         div[data-testid="column"] button[kind="secondary"] {{
