@@ -91,6 +91,34 @@ def _tab_login(cookie_manager):
             st.error("Usuario o contraseña incorrectos.")
 
 
+def _tab_reset():
+    with st.form("form_reset"):
+        usuario     = st.text_input("Usuario", placeholder="Tu usuario…")
+        invitacion  = st.text_input("Código de invitación", type="password",
+                                     placeholder="El mismo que usaron para crear el hogar")
+        clave       = st.text_input("Nueva contraseña", type="password")
+        clave2      = st.text_input("Confirmar nueva contraseña", type="password")
+        ok          = st.form_submit_button("Cambiar contraseña", use_container_width=True, type="primary")
+
+    if not ok:
+        return
+
+    usuario = usuario.strip().lower()
+    codigo_valido = st.secrets.get("auth", {}).get("invite_code", "")
+
+    if not codigo_valido or invitacion != codigo_valido:
+        st.error("Código de invitación incorrecto.")
+    elif not db.usuario_existe(usuario):
+        st.error("No existe ese usuario.")
+    elif len(clave) < 6:
+        st.error("La contraseña debe tener al menos 6 caracteres.")
+    elif clave != clave2:
+        st.error("Las contraseñas no coinciden.")
+    else:
+        db.actualizar_password_casa(usuario, hash_password(clave))
+        st.success("✅ Contraseña actualizada. Ya podés entrar con la nueva.")
+
+
 def _tab_signup(cookie_manager):
     st.session_state.setdefault("signup_slot_ids", [0, 1])
     st.session_state.setdefault("signup_next_id", 2)
@@ -149,9 +177,11 @@ def _tab_signup(cookie_manager):
 
 def pantalla_login(cookie_manager=None):
     _header()
-    tab_login, tab_signup = st.tabs(["Entrar", "Crear hogar"])
+    tab_login, tab_signup, tab_reset = st.tabs(["Entrar", "Crear hogar", "Olvidé mi contraseña"])
     with tab_login:
         _tab_login(cookie_manager)
     with tab_signup:
         _tab_signup(cookie_manager)
+    with tab_reset:
+        _tab_reset()
     st.stop()

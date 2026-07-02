@@ -264,6 +264,11 @@ def usuario_existe(usuario):
     c.execute("SELECT 1 FROM casas WHERE usuario=%s", (usuario,))
     return c.fetchone() is not None
 
+def actualizar_password_casa(usuario, password_hash):
+    conn = get_conn()
+    conn.cursor().execute("UPDATE casas SET password_hash=%s WHERE usuario=%s", (password_hash, usuario))
+    conn.commit()
+
 def obtener_casa_por_id(casa_id):
     conn = get_conn()
     c = conn.cursor()
