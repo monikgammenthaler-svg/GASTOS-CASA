@@ -27,15 +27,35 @@ def render(ctx):
         if not tarjetas:
             st.info("Todavía no configuraste ninguna tarjeta. Agregá la primera abajo.")
         else:
-            hc = st.columns([3, 2.5, 1.5])
-            for c, txt in zip(hc, ["TARJETA", "DUEÑO", ""]):
+            hc = st.columns([2.3, 0.5, 2.2, 1.5])
+            for c, txt in zip(hc, ["TARJETA", "", "DUEÑO", ""]):
                 c.markdown(f"<div style='font-size:9.5px;font-weight:800;letter-spacing:1.2px;"
                            f"color:#9aa0ab;padding-top:6px;'>{txt}</div>", unsafe_allow_html=True)
 
             for tid, nombre, dueno, _ in tarjetas:
-                col_n, col_d, col_b = st.columns([3, 2.5, 1.5])
-                col_n.markdown(f"<div style='font-size:17px;font-weight:600;color:{NAVY};"
-                               f"padding-top:6px;'>{nombre}</div>", unsafe_allow_html=True)
+                editando = st.session_state.get(f"editando_tarj_{tid}", False)
+                col_n, col_e, col_d, col_b = st.columns([2.3, 0.5, 2.2, 1.5])
+
+                if editando:
+                    nuevo_nombre = col_n.text_input("Nombre", value=nombre, key=f"input_nombre_{tid}",
+                                                     label_visibility="collapsed")
+                    if col_e.button("✔️", key=f"guardar_tarj_{tid}", use_container_width=True):
+                        if not nuevo_nombre or nuevo_nombre == nombre:
+                            st.session_state[f"editando_tarj_{tid}"] = False
+                            st.rerun()
+                        else:
+                            try:
+                                db.actualizar_nombre_tarjeta(tid, nuevo_nombre)
+                                st.session_state[f"editando_tarj_{tid}"] = False
+                                st.rerun()
+                            except psycopg2.errors.UniqueViolation:
+                                st.error(f"Ya existe una tarjeta '{nuevo_nombre}' con ese dueño.")
+                else:
+                    col_n.markdown(f"<div style='font-size:17px;font-weight:600;color:{NAVY};"
+                                   f"padding-top:6px;'>{nombre}</div>", unsafe_allow_html=True)
+                    if col_e.button("✏️", key=f"editbtn_tarj_{tid}", use_container_width=True):
+                        st.session_state[f"editando_tarj_{tid}"] = True
+                        st.rerun()
 
                 idx = duenos.index(dueno) if dueno in duenos else 0
                 nuevo_dueno = col_d.selectbox("Dueño", duenos, index=idx,

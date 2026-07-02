@@ -273,6 +273,12 @@ def actualizar_dueno_tarjeta(tarjeta_id, dueno):
     conn.commit()
     _invalidar()
 
+def actualizar_nombre_tarjeta(tarjeta_id, nombre):
+    conn = get_conn()
+    conn.cursor().execute("UPDATE tarjetas SET nombre=%s WHERE id=%s", (nombre, tarjeta_id))
+    conn.commit()
+    _invalidar()
+
 def desactivar_tarjeta(tarjeta_id):
     conn = get_conn()
     conn.cursor().execute("UPDATE tarjetas SET activa=0 WHERE id=%s", (tarjeta_id,))
