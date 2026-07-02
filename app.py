@@ -29,9 +29,9 @@ if not st.session_state.get("casa_id"):
     if casa_id_cookie:
         casa = db.obtener_casa_por_id(casa_id_cookie)
         if casa:
-            _, _, _, nombre, persona_1_c, persona_2_c = casa
+            _, _, _, nombre = casa
             st.session_state["casa_id"]     = casa_id_cookie
-            st.session_state["personas"]    = [persona_1_c, persona_2_c]
+            st.session_state["personas"]    = db.obtener_personas_casa(casa_id_cookie)
             st.session_state["casa_nombre"] = nombre
 
 if not st.session_state.get("casa_id"):
@@ -40,8 +40,6 @@ if not st.session_state.get("casa_id"):
 # ── Variables de sesión ────────────────────────────────────────────────
 casa_id     = st.session_state["casa_id"]
 personas    = st.session_state["personas"]
-persona_1   = personas[0]
-persona_2   = personas[1]
 casa_nombre = st.session_state["casa_nombre"]
 
 
@@ -96,8 +94,6 @@ with st.sidebar:
 ctx = {
     "casa_id":    casa_id,
     "personas":   personas,
-    "persona_1":  persona_1,
-    "persona_2":  persona_2,
     "anio_sel":   anio_sel,
     "mes_sel":    mes_sel,
     "mes_nombre": mes_nombre,

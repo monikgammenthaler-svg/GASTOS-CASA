@@ -5,11 +5,10 @@ from estilos import *
 
 
 def render(ctx):
-    casa_id   = ctx["casa_id"]
-    persona_1 = ctx["persona_1"]
-    persona_2 = ctx["persona_2"]
-    anio_sel  = ctx["anio_sel"]
-    mes_sel   = ctx["mes_sel"]
+    casa_id    = ctx["casa_id"]
+    personas   = ctx["personas"]
+    anio_sel   = ctx["anio_sel"]
+    mes_sel    = ctx["mes_sel"]
     mes_nombre = ctx["mes_nombre"]
 
     if "persona_personal" not in st.session_state:
@@ -25,32 +24,30 @@ def render(ctx):
 </div>""", unsafe_allow_html=True)
 
     persona_sel = st.session_state.persona_personal
-    col_m, col_g = st.columns(2)
-    with col_m:
-        if st.button(f"💙  {persona_1}", use_container_width=True,
-                     type="primary" if persona_sel == persona_1 else "secondary",
-                     key="btn_p1_personal"):
-            st.session_state.persona_personal = persona_1
-            st.rerun()
-    with col_g:
-        if st.button(f"💛  {persona_2}", use_container_width=True,
-                     type="primary" if persona_sel == persona_2 else "secondary",
-                     key="btn_p2_personal"):
-            st.session_state.persona_personal = persona_2
-            st.rerun()
+    iconos = ["💙", "💛", "💚", "🧡", "💜", "🩵", "💗", "💚"]
+    for inicio in range(0, len(personas), 4):
+        cols = st.columns(min(4, len(personas) - inicio))
+        for offset, col in enumerate(cols):
+            p = personas[inicio + offset]
+            with col:
+                if st.button(f"{iconos[(inicio + offset) % len(iconos)]}  {p}", use_container_width=True,
+                             type="primary" if persona_sel == p else "secondary",
+                             key=f"btn_personal_{inicio + offset}"):
+                    st.session_state.persona_personal = p
+                    st.rerun()
 
     persona_sel = st.session_state.persona_personal
     if not persona_sel:
         return
 
-    color_persona    = BLUE  if persona_sel == persona_1 else GOLD
-    color_persona_bg = "#e8f0fe" if persona_sel == persona_1 else GOLD_P
+    acento    = color_persona(persona_sel, personas)
+    acento_bg = tint(acento, .12)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     total_personal = db.get_total_personal_mes(anio_sel, mes_sel, persona_sel, casa_id)
     st.markdown(f"""
-<div style="background:linear-gradient(135deg,{color_persona},{NAVY});
+<div style="background:linear-gradient(135deg,{acento},{NAVY});
      border-radius:14px;padding:20px 24px;margin-bottom:18px;
      box-shadow:0 4px 16px rgba(15,27,53,.18);">
   <div style="color:rgba(255,255,255,.65);font-size:10px;font-weight:800;letter-spacing:2.5px;">
@@ -68,8 +65,8 @@ def render(ctx):
         gastos_p = db.get_gastos_personales_mes(anio_sel, mes_sel, persona_sel, casa_id)
         if not gastos_p:
             st.markdown(f"""
-<div style="text-align:center;padding:36px 20px;background:{color_persona_bg};
-     border-radius:14px;border:1px dashed {color_persona};">
+<div style="text-align:center;padding:36px 20px;background:{acento_bg};
+     border-radius:14px;border:1px dashed {acento};">
   <div style="font-size:32px;margin-bottom:10px;">💸</div>
   <div style="color:{NAVY};font-size:15px;font-weight:600;">Sin gastos personales en {mes_nombre}</div>
   <div style="color:{GRAY};font-size:13px;margin-top:4px;">Cargá uno desde "Nuevo gasto"</div>
@@ -84,9 +81,9 @@ def render(ctx):
                 st.markdown(f"""
 <div style="display:flex;justify-content:space-between;align-items:center;
      padding:6px 12px;margin:10px 0 4px;
-     border-left:3px solid {color_persona};border-radius:0 6px 6px 0;background:rgba(0,0,0,.03);">
+     border-left:3px solid {acento};border-radius:0 6px 6px 0;background:rgba(0,0,0,.03);">
   <span style="color:{NAVY};font-size:12px;font-weight:700;letter-spacing:.5px;">{cat_g.upper()}</span>
-  <span style="color:{color_persona};font-size:13px;font-weight:700;">$ {subtotal:,.0f}</span>
+  <span style="color:{acento};font-size:13px;font-weight:700;">$ {subtotal:,.0f}</span>
 </div>""", unsafe_allow_html=True)
                 for gid, fecha_g, desc_g, monto_g, coment_g in items:
                     col_info, col_del = st.columns([11, 1])
@@ -99,7 +96,7 @@ def render(ctx):
                             f'background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(15,27,53,.06);">'
                             f'<div><div style="color:{NAVY};font-size:13px;font-weight:600;">{desc_g}{nota}</div>'
                             f'<div style="color:{GRAY};font-size:11px;margin-top:1px;">{fecha_g}</div></div>'
-                            f'<span style="color:{color_persona};font-size:15px;font-weight:700;">$ {monto_g:,.0f}</span>'
+                            f'<span style="color:{acento};font-size:15px;font-weight:700;">$ {monto_g:,.0f}</span>'
                             f'</div>', unsafe_allow_html=True)
                     with col_del:
                         if st.button("✕", key=f"del_gp_{gid}", help="Eliminar"):

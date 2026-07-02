@@ -10,6 +10,20 @@ SERIF   = "Newsreader, serif"
 DISPLAY = "Cormorant, serif"
 GOLD_T  = "#a87f2c"
 
+PALETA_PERSONAS = [BLUE, GOLD, "#2e8b57", "#c2410c", "#7c3aed", "#0891b2", "#be185d", "#4d7c0f"]
+
+
+def color_persona(persona, personas):
+    if persona not in personas:
+        return GRAY
+    return PALETA_PERSONAS[personas.index(persona) % len(PALETA_PERSONAS)]
+
+
+def tint(hex_color, alpha=0.16):
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
 
 def css_global():
     return f"""<style>
@@ -71,8 +85,6 @@ def css_global():
     h1 {{ color:{NAVY} !important; }}
     h2, h3 {{ color:{NAVY2} !important; }}
     hr {{ border-color:#e2e8f0 !important; }}
-    .tag-p1 {{ background:{BLUE}; color:{WHITE}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
-    .tag-p2 {{ background:{GOLD}; color:{NAVY}; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:700; }}
     .g-card {{ background:{WHITE}; border-radius:14px; padding:20px 24px; box-shadow:0 2px 12px rgba(15,27,53,0.08); margin-bottom:16px; }}
     div[data-testid="stSidebarNav"] {{ display:none; }}
     div[data-testid="stToggle"] div[aria-checked="true"],

@@ -13,10 +13,8 @@ PRIO_COLOR = {"Alta": "#ef4444", "Normal": GOLD, "Baja": GRAY}
 def render(ctx):
     casa_id   = ctx["casa_id"]
     personas  = ctx["personas"]
-    persona_1 = ctx["persona_1"]
-    persona_2 = ctx["persona_2"]
 
-    ICON_QUIEN = {"Ambos": "👫", persona_1: "🙋", persona_2: "🙋"}
+    ICON_QUIEN = {"Todos": "👫", **{p: "🙋" for p in personas}}
 
     st.markdown(
         f'<div style="background:{WHITE};border-radius:16px;padding:18px 22px;'
@@ -30,7 +28,7 @@ def render(ctx):
         col_cat, col_pri, col_quien = st.columns(3)
         categoria  = col_cat.selectbox("Categoría", db.CATEGORIAS_PENDIENTES)
         prioridad  = col_pri.selectbox("Prioridad", db.PRIORIDADES)
-        asignado_a = col_quien.selectbox("Para quién", ["Ambos"] + personas)
+        asignado_a = col_quien.selectbox("Para quién", ["Todos"] + personas)
         enviado = st.form_submit_button("➕ Agregar", use_container_width=True, type="primary")
 
     if enviado:

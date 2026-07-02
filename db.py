@@ -169,6 +169,29 @@ def init_db():
             END IF;
         END $$;
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS personas_casa (
+            id SERIAL PRIMARY KEY,
+            casa_id INTEGER NOT NULL,
+            nombre TEXT NOT NULL,
+            orden INTEGER NOT NULL,
+            UNIQUE(casa_id, nombre)
+        )
+    """)
+    c.execute("ALTER TABLE casas ALTER COLUMN persona_1 DROP NOT NULL")
+    c.execute("ALTER TABLE casas ALTER COLUMN persona_2 DROP NOT NULL")
+    c.execute("""
+        INSERT INTO personas_casa (casa_id, nombre, orden)
+        SELECT id, persona_1, 1 FROM casas
+        WHERE persona_1 IS NOT NULL
+          AND id NOT IN (SELECT casa_id FROM personas_casa)
+    """)
+    c.execute("""
+        INSERT INTO personas_casa (casa_id, nombre, orden)
+        SELECT id, persona_2, 2 FROM casas
+        WHERE persona_2 IS NOT NULL
+          AND id NOT IN (SELECT casa_id FROM personas_casa WHERE orden=2)
+    """)
 
     c.execute("ALTER TABLE gastos_fijos ADD COLUMN IF NOT EXISTS pagado_por TEXT DEFAULT 'Moni'")
     c.execute("ALTER TABLE gastos_variables ADD COLUMN IF NOT EXISTS casa_id INTEGER DEFAULT 1")
@@ -211,14 +234,18 @@ def init_db():
 
 # ── Casas / cuentas ──────────────────────────────────────────────────
 
-def crear_casa(usuario, password_hash, nombre, persona_1, persona_2):
+def crear_casa(usuario, password_hash, nombre, personas):
     conn = get_conn()
     c = conn.cursor()
     c.execute(
-        "INSERT INTO casas (usuario, password_hash, nombre, persona_1, persona_2) VALUES (%s,%s,%s,%s,%s) RETURNING id",
-        (usuario, password_hash, nombre, persona_1, persona_2),
+        "INSERT INTO casas (usuario, password_hash, nombre) VALUES (%s,%s,%s) RETURNING id",
+        (usuario, password_hash, nombre),
     )
     casa_id = c.fetchone()[0]
+    c.executemany(
+        "INSERT INTO personas_casa (casa_id, nombre, orden) VALUES (%s,%s,%s)",
+        [(casa_id, p, i + 1) for i, p in enumerate(personas)],
+    )
     conn.commit()
     return casa_id
 
@@ -226,7 +253,7 @@ def obtener_casa_por_usuario(usuario):
     conn = get_conn()
     c = conn.cursor()
     c.execute(
-        "SELECT id, usuario, password_hash, nombre, persona_1, persona_2 FROM casas WHERE usuario=%s",
+        "SELECT id, usuario, password_hash, nombre FROM casas WHERE usuario=%s",
         (usuario,),
     )
     return c.fetchone()
@@ -241,10 +268,16 @@ def obtener_casa_por_id(casa_id):
     conn = get_conn()
     c = conn.cursor()
     c.execute(
-        "SELECT id, usuario, password_hash, nombre, persona_1, persona_2 FROM casas WHERE id=%s",
+        "SELECT id, usuario, password_hash, nombre FROM casas WHERE id=%s",
         (casa_id,),
     )
     return c.fetchone()
+
+def obtener_personas_casa(casa_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT nombre FROM personas_casa WHERE casa_id=%s ORDER BY orden", (casa_id,))
+    return [row[0] for row in c.fetchall()]
 
 
 # ── Tarjetas ─────────────────────────────────────────────────────────

@@ -7,8 +7,6 @@ from estilos import *
 def render(ctx):
     casa_id   = ctx["casa_id"]
     personas  = ctx["personas"]
-    persona_1 = ctx["persona_1"]
-    persona_2 = ctx["persona_2"]
     anio_sel  = ctx["anio_sel"]
     mes_sel   = ctx["mes_sel"]
 
@@ -83,8 +81,8 @@ def render(ctx):
 
                 for (cid, detalle_c, v_total, n, v_cuota, mon, primera, tarjeta_c, persona, coment, pagadas) in vis:
                     pct     = round(pagadas / n * 100) if n else 0
-                    chip_bg = "#e8f0fe" if persona == persona_1 else "rgba(201,168,76,.2)"
-                    chip_c  = BLUE     if persona == persona_1 else "#8a6d22"
+                    chip_c  = color_persona(persona, personas)
+                    chip_bg = tint(chip_c, .2)
                     lbl = f"💳 {tarjeta_c}  ·  {detalle_c}  —  {mon} {v_cuota:,.0f}/mes  (cuota {pagadas}/{n})"
                     with st.expander(lbl, expanded=False):
                         st.markdown(f"""

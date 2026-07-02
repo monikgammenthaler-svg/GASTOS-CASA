@@ -7,8 +7,6 @@ from estilos import *
 def render(ctx):
     casa_id   = ctx["casa_id"]
     personas  = ctx["personas"]
-    persona_1 = ctx["persona_1"]
-    persona_2 = ctx["persona_2"]
     anio_sel  = ctx["anio_sel"]
     mes_sel   = ctx["mes_sel"]
     mes_nombre = ctx["mes_nombre"]
@@ -41,9 +39,9 @@ def render(ctx):
 </div>""", unsafe_allow_html=True)
 
     for _, row in df.iterrows():
-        tag = (f"<span class='tag-p1'>{persona_1.upper()}</span>"
-               if row["Pagado por"] == persona_1
-               else f"<span class='tag-p2'>{persona_2.upper()}</span>")
+        col = color_persona(row["Pagado por"], personas)
+        tag = (f"<span style='background:{col};color:{WHITE};font-size:12px;font-weight:700;"
+               f"border-radius:6px;padding:3px 10px;'>{row['Pagado por'].upper()}</span>")
         with st.expander(f"{row['Fecha']}  —  {row['Descripción'] or row['Categoría']}  |  $ {row['Monto']:,.0f}"):
             c1, c2, c3 = st.columns(3)
             c1.write(f"**Categoría:** {row['Categoría']}")
